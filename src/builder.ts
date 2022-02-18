@@ -5,7 +5,7 @@ import glob from 'glob-promise';
 import chokidar from 'chokidar';
 import normalizePath from 'normalize-path';
 
-import amxxpc from './amxxpc';
+import amxxpc, { AMXPCMessageType } from './amxxpc';
 import Logger from './logger';
 
 export interface IAmxxBuilderConfig {
@@ -167,6 +167,7 @@ export default class AmxxBuilder {
   async compilePlugin(filePath: string): Promise<void> {
     const srcPath = path.resolve(filePath);
     const destDir = path.resolve(this.config.output.plugins);
+    const relateiveSrcPath = path.relative(process.cwd(), srcPath);
 
     await mkdirp(destDir);
 
@@ -180,23 +181,25 @@ export default class AmxxBuilder {
       ]
     });
 
-    result.output.messages.forEach((message: any) => {
-      const { filename, startLine, type, code, text } = message;
-      if (type === 'error' || type === 'fatal error') {
-        this.logger.error(`${filename}(${startLine}) : ${type} ${code}: ${text}`);
-      } else if (type === 'warning') {
-        this.logger.warn(`${filename}(${startLine}) : ${type} ${code}: ${text}`);
-      } else if (type === 'echo') {
+    result.output.messages.forEach((message) => {
+      const { startLine, type, code, text } = message;
+
+      if (type === AMXPCMessageType.Error || type === AMXPCMessageType.FatalError) {
+        this.logger.error(`${normalizePath(relateiveSrcPath)}(${startLine}) : ${type} ${code}: ${text}`);
+      } else if (type === AMXPCMessageType.Warning) {
+        this.logger.warn(`${normalizePath(relateiveSrcPath)}(${startLine}) : ${type} ${code}: ${text}`);
+      } else if (type === AMXPCMessageType.Echo) {
         this.logger.debug(text);
       }
     });
 
     if (result.success) {
       const destPath = path.join(destDir, result.plugin);
-      this.logger.info(`Compilation success: ${normalizePath(filePath)}`);
+      const relativeFilePath = path.relative(process.cwd(), filePath);
+      this.logger.info(`Compilation success: ${normalizePath(relativeFilePath)}`);
       this.logger.info(`Plugin updated: ${normalizePath(destPath)}`);
     } else {
-      throw new Error(`Failed to compile plugin ${result.plugin}. Error: "${result.error}".`);
+      throw new Error(`Failed to compile ${normalizePath(relateiveSrcPath)} : "${result.error}"`);
     }
   }
 }

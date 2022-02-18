@@ -5,9 +5,10 @@ const mkdirp = require('mkdirp');
 
 const PluginExt = 'amxx';
 
-enum MessageType {
+export enum AMXPCMessageType {
   Echo = 'echo',
   Error = 'error',
+  Warning = 'warning',
   FatalError = 'fatal error'
 }
 
@@ -16,7 +17,7 @@ interface IMessage {
   startLine?: number;
   endLine?: number;
   code?: number;
-  type: MessageType;
+  type: AMXPCMessageType;
   text: string;
 }
 
@@ -66,7 +67,7 @@ function parseLine(line: string): IMessage {
   const match = line.match(messageRegExp);
 
   if (!match) {
-    return { type: MessageType.Echo, text: line };
+    return { type: AMXPCMessageType.Echo, text: line };
   }
 
   const [, filename, startLine, endLine, type, code, text] = match;
@@ -75,7 +76,7 @@ function parseLine(line: string): IMessage {
     filename,
     startLine: +startLine,
     endLine: endLine ? +endLine : -1,
-    type: type as MessageType,
+    type: type as AMXPCMessageType,
     code: +code,
     text
   };
@@ -89,9 +90,9 @@ function parseOutput(output: string): IParseOutputResult {
 
     const { type } = message;
 
-    if (type === MessageType.Error || type === MessageType.FatalError) {
+    if (type === AMXPCMessageType.Error || type === AMXPCMessageType.FatalError) {
       result.error = true;
-    } else if (type === MessageType.Echo) {
+    } else if (type === AMXPCMessageType.Echo) {
       if (line.startsWith('Compilation aborted.')
         || line.startsWith('Could not locate output file')) {
         result.error = true;
