@@ -17,6 +17,9 @@ export interface IAmxxBuilderConfig {
     scripts: string;
     include: string[];
     assets: string;
+    thirdparty?: {
+      include: string[];
+    }
   };
   output: {
     scripts: string;
@@ -45,7 +48,10 @@ export default class AmxxBuilder {
       input: {
         scripts: path.resolve(input.scripts),
         include: input.include.map((include) => path.resolve(include)),
-        assets: path.resolve(input.assets)
+        assets: path.resolve(input.assets),
+        thirdparty: {
+          include: (input.thirdparty?.include || []).map((include) => path.resolve(include)),
+        }
       },
       output: {
         scripts: path.resolve(output.scripts),
@@ -186,7 +192,8 @@ export default class AmxxBuilder {
       compiler: this.config.compiler.executable,
       includeDir: [
         path.join(this.config.compiler.dir, 'include'),
-        ...(this.config.input.include || [])
+        ...(this.config.input.include || []),
+        ...(this.config.input.thirdparty?.include || [])
       ]
     });
 

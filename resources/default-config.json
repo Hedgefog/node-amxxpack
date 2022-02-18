@@ -8,7 +8,10 @@
     "include": [
       "./src/include"
     ],
-    "assets": "./assets"
+    "assets": "./assets",
+    "thirdarty": {
+      "include": []
+    }
   },
   "output": {
     "scripts": "./dist/addons/amxmodx/scripting",
