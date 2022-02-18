@@ -1,0 +1,19 @@
+{
+  "compiler": { 
+    "dir": "./compiler",
+    "executable": "amxxpc.exe"
+  },
+  "input": {
+    "scripts": "./src/scripts",
+    "include": [
+      "./src/include"
+    ],
+    "assets": "./assets"
+  },
+  "output": {
+    "scripts": "./dist/addons/amxmodx/scripting",
+    "plugins": "./dist/addons/amxmodx/plugins",
+    "include": "./dist/addons/amxmodx/scripting/include",
+    "assets": "./dist"
+  }
+}
