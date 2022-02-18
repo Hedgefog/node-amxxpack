@@ -134,7 +134,7 @@ export default class AmxxBuilder {
 
     await mkdirp(this.config.output.scripts);
     await fs.promises.copyFile(srcPath, destPath);
-    this.logger.info(`Script updated: ${normalizePath(destPath)}`);
+    this.logger.info('Script updated:', normalizePath(destPath));
   }
 
   async updateAsset(filePath: string): Promise<void> {
@@ -145,7 +145,7 @@ export default class AmxxBuilder {
     await mkdirp(path.parse(destPath).dir);
 
     await fs.promises.copyFile(srcPath, destPath);
-    this.logger.info(`Asset updated: ${normalizePath(destPath)}`);
+    this.logger.info('Asset updated', normalizePath(destPath));
   }
 
   async updateInclude(filePath: string): Promise<void> {
@@ -154,7 +154,7 @@ export default class AmxxBuilder {
 
     await mkdirp(this.config.output.include);
     await fs.promises.copyFile(srcPath, destPath);
-    this.logger.info(`Include updated: ${normalizePath(destPath)}`);
+    this.logger.info('Include updated:', normalizePath(destPath));
   }
 
   async findPlugins(pattern: string): Promise<string[]> {
@@ -185,9 +185,9 @@ export default class AmxxBuilder {
       const { startLine, type, code, text } = message;
 
       if (type === AMXPCMessageType.Error || type === AMXPCMessageType.FatalError) {
-        this.logger.error(`${normalizePath(relateiveSrcPath)}(${startLine}) : ${type} ${code}: ${text}`);
+        this.logger.error(`${normalizePath(relateiveSrcPath)}(${startLine})`, type, code, ':', text);
       } else if (type === AMXPCMessageType.Warning) {
-        this.logger.warn(`${normalizePath(relateiveSrcPath)}(${startLine}) : ${type} ${code}: ${text}`);
+        this.logger.warn(`${normalizePath(relateiveSrcPath)}(${startLine})`, type, code, ':', text);
       } else if (type === AMXPCMessageType.Echo) {
         this.logger.debug(text);
       }
@@ -196,8 +196,8 @@ export default class AmxxBuilder {
     if (result.success) {
       const destPath = path.join(destDir, result.plugin);
       const relativeFilePath = path.relative(process.cwd(), filePath);
-      this.logger.info(`Compilation success: ${normalizePath(relativeFilePath)}`);
-      this.logger.info(`Plugin updated: ${normalizePath(destPath)}`);
+      this.logger.success('Compilation success:', normalizePath(relativeFilePath));
+      this.logger.info('Plugin updated:', normalizePath(destPath));
     } else {
       throw new Error(`Failed to compile ${normalizePath(relateiveSrcPath)} : "${result.error}"`);
     }

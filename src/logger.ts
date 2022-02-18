@@ -61,7 +61,7 @@ export default class Logger {
     switch (level) {
       case 'debug': return colors.grey(message);
       case 'success': return colors.white(message);
-      case 'info': return colors.white(message);
+      case 'info': return colors.grey(message);
       case 'warning': return colors.white(message);
       case 'error': return colors.white(message);
     }
