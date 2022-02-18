@@ -10,16 +10,13 @@ import Logger from './logger';
 
 export interface IAmxxBuilderConfig {
   compiler: {
-    dir: string;
     executable: string;
+    include: string[];
   };
   input: {
     scripts: string;
-    include: string[];
+    include: string;
     assets: string;
-    thirdparty?: {
-      include: string[];
-    }
   };
   output: {
     scripts: string;
@@ -36,22 +33,17 @@ export default class AmxxBuilder {
   constructor(config: IAmxxBuilderConfig) {
     const { compiler, input, output } = config;
 
-    const compilerDir = path.resolve(compiler.dir);
-
     this.logger = new Logger();
 
     this.config = {
       compiler: {
-        dir: compilerDir,
-        executable: path.join(compilerDir, compiler.executable)
+        include: compiler.include.map((include) => path.resolve(include)),
+        executable: path.resolve(compiler.executable)
       },
       input: {
         scripts: path.resolve(input.scripts),
-        include: input.include.map((include) => path.resolve(include)),
+        include: path.resolve(input.include),
         assets: path.resolve(input.assets),
-        thirdparty: {
-          include: (input.thirdparty?.include || []).map((include) => path.resolve(include)),
-        }
       },
       output: {
         scripts: path.resolve(output.scripts),
@@ -81,13 +73,9 @@ export default class AmxxBuilder {
   }
 
   async buildInclude(): Promise<void> {
-    await Promise.all(
-      this.config.input.include.map(async (include: string) => {
-        const pathPattern = path.join(include, '**/*.inc');
-        const matches = await glob(pathPattern, { nodir: true });
-        matches.map((filePath) => this.updateInclude(filePath));
-      })
-    );
+    const pathPattern = path.join(this.config.input.include, '**/*.inc');
+    const matches = await glob(pathPattern, { nodir: true });
+    matches.map((filePath) => this.updateInclude(filePath));
   }
 
   async buildAssets(): Promise<void> {
@@ -123,20 +111,16 @@ export default class AmxxBuilder {
   }
 
   async watchInclude(): Promise<void> {
-    await Promise.all(
-      this.config.input.include.map(async (include: string) => {
-        const pathPattern = path.join(include, '**/*.inc');
-        const watcher = chokidar.watch(pathPattern, { ignoreInitial: true });
+    const pathPattern = path.join(this.config.input.include, '**/*.inc');
+    const watcher = chokidar.watch(pathPattern, { ignoreInitial: true });
 
-        const updateFn = (filePath: string) => (
-          this.updateInclude(filePath)
-            .catch((err) => this.logger.error(err.message))
-        );
-
-        watcher.on('add', updateFn);
-        watcher.on('change', updateFn);
-      })
+    const updateFn = (filePath: string) => (
+      this.updateInclude(filePath)
+        .catch((err) => this.logger.error(err.message))
     );
+
+    watcher.on('add', updateFn);
+    watcher.on('change', updateFn);
   }
 
   async updatePlugin(filePath: string): Promise<void> {
@@ -191,9 +175,8 @@ export default class AmxxBuilder {
       dest: destDir,
       compiler: this.config.compiler.executable,
       includeDir: [
-        path.join(this.config.compiler.dir, 'include'),
-        ...(this.config.input.include || []),
-        ...(this.config.input.thirdparty?.include || [])
+        ...this.config.compiler.include,
+        this.config.input.include,
       ]
     });
 
