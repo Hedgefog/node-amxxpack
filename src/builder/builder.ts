@@ -6,25 +6,9 @@ import chokidar from 'chokidar';
 import normalizePath from 'normalize-path';
 
 import amxxpc, { AMXPCMessageType } from './amxxpc';
-import Logger from './logger';
-
-export interface IAmxxBuilderConfig {
-  compiler: {
-    executable: string;
-    include: string[];
-  };
-  input: {
-    scripts: string;
-    include: string;
-    assets: string;
-  };
-  output: {
-    scripts: string;
-    plugins: string;
-    include: string;
-    assets: string;
-  };
-}
+import Logger from '../services/logger';
+import { IAmxxBuilderConfig } from './types';
+import { ASSETS_PATH_PATTERN, INCLUDE_PATH_PATTERN, SCRIPTS_PATH_PATTERN } from './constants';
 
 export default class AmxxBuilder {
   private logger: Logger;
@@ -37,8 +21,8 @@ export default class AmxxBuilder {
 
     this.config = {
       compiler: {
-        include: compiler.include.map((include) => path.resolve(include)),
-        executable: path.resolve(compiler.executable)
+        executable: path.resolve(compiler.executable),
+        include: compiler.include.map((include) => path.resolve(include))
       },
       input: {
         scripts: path.resolve(input.scripts),
@@ -55,72 +39,63 @@ export default class AmxxBuilder {
   }
 
   async build(): Promise<void> {
-    await this.buildSrc();
     await this.buildAssets();
     await this.buildInclude();
+    await this.buildSrc();
   }
 
   async watch(): Promise<void> {
-    await this.watchSrc();
     await this.watchAssets();
     await this.watchInclude();
+    await this.watchSrc();
   }
 
   async buildSrc(): Promise<void> {
-    const pathPattern = path.join(this.config.input.scripts, '**/*.sma');
-    const matches = await glob(pathPattern, { nodir: true });
-    matches.map((filePath) => this.updatePlugin(filePath));
+    await this.buildDir(
+      this.config.input.scripts,
+      SCRIPTS_PATH_PATTERN,
+      (filePath: string) => this.updatePlugin(filePath)
+    );
   }
 
   async buildInclude(): Promise<void> {
-    const pathPattern = path.join(this.config.input.include, '**/*.inc');
-    const matches = await glob(pathPattern, { nodir: true });
-    matches.map((filePath) => this.updateInclude(filePath));
+    await this.buildDir(
+      this.config.input.include,
+      INCLUDE_PATH_PATTERN,
+      (filePath: string) => this.updateInclude(filePath)
+    );
   }
 
   async buildAssets(): Promise<void> {
-    const pathPattern = path.join(this.config.input.assets, '**/*.*');
-    const matches = await glob(pathPattern, { nodir: true });
-    matches.map((filePath) => this.updateAsset(filePath));
+    await this.buildDir(
+      this.config.input.assets,
+      ASSETS_PATH_PATTERN,
+      (filePath: string) => this.updateAsset(filePath)
+    );
   }
 
   async watchSrc(): Promise<void> {
-    const pathPattern = path.join(this.config.input.scripts, '**/*.sma');
-    const watcher = chokidar.watch(pathPattern, { ignoreInitial: true });
-
-    const updateFn = (filePath: string) => (
-      this.updatePlugin(filePath)
-        .catch((err) => this.logger.error(err.message))
+    await this.watchDir(
+      this.config.input.scripts,
+      SCRIPTS_PATH_PATTERN,
+      (filePath: string) => this.updatePlugin(filePath)
     );
-
-    watcher.on('add', updateFn);
-    watcher.on('change', updateFn);
-  }
-
-  async watchAssets(): Promise<void> {
-    const pathPattern = path.join(this.config.input.assets, '**/*.*');
-    const watcher = chokidar.watch(pathPattern, { ignoreInitial: true });
-
-    const updateFn = (filePath: string) => (
-      this.updateAsset(filePath)
-        .catch((err) => this.logger.error(err.message))
-    );
-
-    watcher.on('add', updateFn);
-    watcher.on('change', updateFn);
   }
 
   async watchInclude(): Promise<void> {
-    const pathPattern = path.join(this.config.input.include, '**/*.inc');
-    const watcher = chokidar.watch(pathPattern, { ignoreInitial: true });
-
-    const updateFn = (filePath: string) => (
-      this.updateInclude(filePath)
-        .catch((err) => this.logger.error(err.message))
+    await this.watchDir(
+      this.config.input.include,
+      INCLUDE_PATH_PATTERN,
+      (filePath: string) => this.updateInclude(filePath)
     );
+  }
 
-    watcher.on('add', updateFn);
-    watcher.on('change', updateFn);
+  async watchAssets(): Promise<void> {
+    await this.watchDir(
+      this.config.input.assets,
+      ASSETS_PATH_PATTERN,
+      (filePath: string) => this.updateAsset(filePath)
+    );
   }
 
   async updatePlugin(filePath: string): Promise<void> {
@@ -143,7 +118,6 @@ export default class AmxxBuilder {
     const destPath = path.join(this.config.output.assets, relativePath);
 
     await mkdirp(path.parse(destPath).dir);
-
     await fs.promises.copyFile(srcPath, destPath);
     this.logger.info('Asset updated', normalizePath(destPath));
   }
@@ -201,5 +175,34 @@ export default class AmxxBuilder {
     } else {
       throw new Error(`Failed to compile ${normalizePath(relateiveSrcPath)} : "${result.error}"`);
     }
+  }
+
+  private async buildDir(
+    baseDir: string,
+    pattern: string,
+    cb: (filePath: string) => any
+  ): Promise<void> {
+    const pathPattern = path.join(baseDir, pattern);
+    const matches = await glob(pathPattern, { nodir: true });
+    await matches.reduce(
+      (acc, match) => acc.then(() => cb(match)),
+      Promise.resolve()
+    );
+  }
+
+  private async watchDir(
+    baseDir: string,
+    pattern: string,
+    cb: (filePath: string) => any
+  ): Promise<void> {
+    const pathPattern = path.join(baseDir, pattern);
+    const watcher = chokidar.watch(pathPattern, { ignoreInitial: true });
+
+    const updateFn = (filePath: string) => cb(filePath).catch(
+      (err: Error) => this.logger.error(err.message)
+    );
+
+    watcher.on('add', updateFn);
+    watcher.on('change', updateFn);
   }
 }

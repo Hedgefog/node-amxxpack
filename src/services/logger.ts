@@ -59,11 +59,11 @@ export default class Logger {
 
   private colorifyMessageByLevel(level: LogLevel, message: string) {
     switch (level) {
-      case 'debug': return colors.grey(message);
-      case 'success': return colors.white(message);
-      case 'info': return colors.grey(message);
-      case 'warning': return colors.white(message);
-      case 'error': return colors.white(message);
+      case LogLevel.Debug: return colors.grey(message);
+      case LogLevel.Success: return colors.white(message);
+      case LogLevel.Info: return colors.grey(message);
+      case LogLevel.Warning: return colors.white(message);
+      case LogLevel.Error: return colors.white(message);
     }
 
     return message;
@@ -71,11 +71,11 @@ export default class Logger {
 
   private getLevelLabel(level: LogLevel): string {
     switch (level) {
-      case 'debug': return colors.grey('[DEBUG]');
-      case 'success': return colors.green('[SUCCESS]');
-      case 'info': return colors.cyan('[INFO]');
-      case 'warning': return colors.yellow('[WARNING]');
-      case 'error': return colors.red('[ERROR]');
+      case LogLevel.Debug: return colors.grey('[DEBUG]');
+      case LogLevel.Success: return colors.green('[SUCCESS]');
+      case LogLevel.Info: return colors.cyan('[INFO]');
+      case LogLevel.Warning: return colors.yellow('[WARNING]');
+      case LogLevel.Error: return colors.red('[ERROR]');
     }
 
     return '';

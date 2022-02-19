@@ -2,10 +2,10 @@
   "name": "amxxpack",
   "description": "AMXXPack",
   "author": "Hedgehog Fog",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "license": "MIT",
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
+  "main": "lib/builder/index.js",
+  "types": "lib/builder/index.d.ts",
   "files": [
     "lib/**/*",
     "resources/**/*"
@@ -16,7 +16,7 @@
     "prepare": "npm run build"
   },
   "bin": {
-    "amxxpack": "./lib/cli.js"
+    "amxxpack": "./lib/cli/index.js"
   },
   "keywords": [
     "amx",

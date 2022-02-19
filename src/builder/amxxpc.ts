@@ -1,9 +1,10 @@
-const path = require('path');
-const childProcess = require('child_process');
+import path from 'path';
+import childProcess from 'child_process';
+import mkdirp from 'mkdirp';
 
-const mkdirp = require('mkdirp');
+import accumulator from '../utils/accumulator';
 
-const PluginExt = 'amxx';
+const PLUGIN_EXT = 'amxx';
 
 export enum AMXPCMessageType {
   Echo = 'echo',
@@ -65,7 +66,6 @@ const messageRegExp = buildMessageRegExp();
 
 function parseLine(line: string): IMessage {
   const match = line.match(messageRegExp);
-
   if (!match) {
     return { type: AMXPCMessageType.Echo, text: line };
   }
@@ -82,6 +82,11 @@ function parseLine(line: string): IMessage {
   };
 }
 
+function isAbortedEcho(line: string) {
+  return line.startsWith('Compilation aborted.')
+  || line.startsWith('Could not locate output file');
+}
+
 function parseOutput(output: string): IParseOutputResult {
   const result: IParseOutputResult = { messages: [], aborted: false, error: false };
 
@@ -92,12 +97,9 @@ function parseOutput(output: string): IParseOutputResult {
 
     if (type === AMXPCMessageType.Error || type === AMXPCMessageType.FatalError) {
       result.error = true;
-    } else if (type === AMXPCMessageType.Echo) {
-      if (line.startsWith('Compilation aborted.')
-        || line.startsWith('Could not locate output file')) {
-        result.error = true;
-        result.aborted = true;
-      }
+    } else if (type === AMXPCMessageType.Echo && isAbortedEcho(line)) {
+      result.error = true;
+      result.aborted = true;
     }
 
     result.messages.push(message);
@@ -116,13 +118,30 @@ function formatArgs(params: any, outPath: string) {
 
 function compile(params: any): Promise<ICompileResult> {
   const parsedPath = path.parse(params.path);
-  const fileName = `${parsedPath.name}.${PluginExt}`;
+  const fileName = `${parsedPath.name}.${PLUGIN_EXT}`;
   const dest = path.join(params.dest, fileName);
 
   mkdirp.sync(params.dest);
 
   return new Promise((resolve) => {
-    let output = '';
+    const output = accumulator();
+
+    const done = (error: Error) => {
+      const outputData = output();
+      const parsedOutput = parseOutput(outputData);
+
+      let errorMessage = error && error.message;
+      if (!errorMessage && parsedOutput.error) {
+        errorMessage = 'Compilation error';
+      }
+
+      resolve({
+        error: errorMessage,
+        plugin: fileName,
+        success: !errorMessage,
+        output: parsedOutput
+      });
+    };
 
     const compilerProcess = childProcess.spawn(
       params.compiler,
@@ -133,34 +152,10 @@ function compile(params: any): Promise<ICompileResult> {
       }
     );
 
-    compilerProcess.stdout.on('data', (data: string) => {
-      output += data.toString();
-    });
-
+    compilerProcess.on('error', done);
+    compilerProcess.on('close', done);
+    compilerProcess.stdout.on('data', output);
     compilerProcess.stderr.on('data', (data: string) => console.error(data));
-
-    compilerProcess.on('error', (err: Error) => {
-      const parsedOutput = parseOutput(output);
-
-      resolve({
-        plugin: fileName,
-        error: err.message,
-        success: false,
-        output: parsedOutput
-      });
-    });
-
-    compilerProcess.on('close', () => {
-      const parsedOutput = parseOutput(output);
-      const error = parsedOutput.error ? 'Compilation error' : undefined;
-
-      resolve({
-        plugin: fileName,
-        error,
-        success: !parsedOutput.error,
-        output: parsedOutput
-      });
-    });
   });
 }
 
