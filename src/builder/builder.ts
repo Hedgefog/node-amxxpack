@@ -39,9 +39,11 @@ export default class AmxxBuilder {
   }
 
   async build(): Promise<void> {
+    this.logger.info('Building...');
     await this.buildAssets();
     await this.buildInclude();
     await this.buildSrc();
+    this.logger.success('Build finished!');
   }
 
   async watch(): Promise<void> {
