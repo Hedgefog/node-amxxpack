@@ -14,7 +14,7 @@ program
   .command('init')
   .action(async () => {
     const projectDir = process.cwd();
-    await controller.initConfig(projectDir);
+    await controller.init(projectDir);
   });
 
 program

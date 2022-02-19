@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs';
+import mkdirp from 'mkdirp';
 
 import AmxxBuilder, { IAmxxBuilderConfig } from '../builder';
 
@@ -30,11 +31,21 @@ class Controller {
     return builder;
   }
 
-  public async initConfig(projectDir: string): Promise<void> {
+  public async init(projectDir: string): Promise<void> {
+    const configPath = path.join(projectDir, '.amxxpack.json');
+
     await fs.promises.copyFile(
       path.join(__dirname, '../../resources/default-config.json'),
-      path.join(projectDir, '.amxxpack.json')
+      configPath
     );
+
+    const config = JSON.parse(
+      await fs.promises.readFile(configPath, 'utf8')
+    ) as IAmxxBuilderConfig;
+
+    await mkdirp(path.join(projectDir, config.input.assets));
+    await mkdirp(path.join(projectDir, config.input.include));
+    await mkdirp(path.join(projectDir, config.input.scripts));
   }
 
   public async compile(scriptPath: string, configPath: string): Promise<void> {
