@@ -2,7 +2,7 @@
   "name": "amxxpack",
   "description": "AMXXPack",
   "author": "Hedgehog Fog",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "license": "MIT",
   "main": "lib/builder/index.js",
   "types": "lib/builder/index.d.ts",
@@ -34,7 +34,6 @@
     "pawn"
   ],
   "dependencies": {
-    "chalk": "^5.0.0",
     "chokidar": "^3.5.3",
     "colors": "^1.4.0",
     "commander": "^9.0.0",
