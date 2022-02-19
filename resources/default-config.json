@@ -15,5 +15,8 @@
     "plugins": "./dist/addons/amxmodx/plugins",
     "include": "./dist/addons/amxmodx/scripting/include",
     "assets": "./dist"
+  },
+  "rules": {
+    "flatCompilation": true
   }
 }

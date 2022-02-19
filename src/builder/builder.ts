@@ -4,6 +4,7 @@ import mkdirp from 'mkdirp';
 import glob from 'glob-promise';
 import chokidar from 'chokidar';
 import normalizePath from 'normalize-path';
+import { get } from 'lodash';
 
 import amxxpc, { AMXPCMessageType } from './amxxpc';
 import Logger from '../services/logger';
@@ -12,10 +13,10 @@ import { ASSETS_PATH_PATTERN, INCLUDE_PATH_PATTERN, SCRIPTS_PATH_PATTERN } from 
 
 export default class AmxxBuilder {
   private logger: Logger;
-  private config: IAmxxBuilderConfig;
+  private config: Required<IAmxxBuilderConfig>;
 
   constructor(config: IAmxxBuilderConfig) {
-    const { compiler, input, output } = config;
+    const { compiler, input, output, rules } = config;
 
     this.logger = new Logger();
 
@@ -34,6 +35,9 @@ export default class AmxxBuilder {
         plugins: path.resolve(output.plugins),
         include: path.resolve(output.include),
         assets: path.resolve(output.assets)
+      },
+      rules: {
+        flatCompilation: get(rules, 'flatCompilation', true)
       }
     };
   }
@@ -142,7 +146,13 @@ export default class AmxxBuilder {
 
   async compilePlugin(filePath: string): Promise<void> {
     const srcPath = path.resolve(filePath);
-    const destDir = path.resolve(this.config.output.plugins);
+
+    let destDir = path.resolve(this.config.output.plugins);
+    if (!this.config.rules.flatCompilation) {
+      const srcDir = path.parse(srcPath).dir;
+      destDir = path.join(destDir, path.relative(this.config.input.scripts, srcDir));
+    }
+
     const relateiveSrcPath = path.relative(process.cwd(), srcPath);
 
     await mkdirp(destDir);

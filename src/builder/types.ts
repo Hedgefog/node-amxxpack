@@ -14,4 +14,7 @@ export interface IAmxxBuilderConfig {
     include: string;
     assets: string;
   };
+  rules?: {
+    flatCompilation?: boolean;
+  };
 }
