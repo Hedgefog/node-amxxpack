@@ -20,7 +20,7 @@ program
 program
   .command('compile')
   .argument('<path>', 'Script path or glob')
-  .option('--config, -c', 'Config file', '.amxxpack.json')
+  .option('--config, -c <path>', 'Config file', '.amxxpack.json')
   .action(async (str: string, options: any) => {
     await controller.compile(str, options.C);
   });
@@ -28,7 +28,7 @@ program
 program
   .command('build')
   .option('--watch, -w', 'Watch project')
-  .option('--config, -c', 'Config file', '.amxxpack.json')
+  .option('--config, -c <path>', 'Config file', '.amxxpack.json')
   .action(async (str: string, options: any) => {
     const opts = options.opts();
     await controller.build(opts.C, opts.W);
