@@ -1,19 +1,44 @@
 # 📦 AMXXPack 
 Simple build system and **CLI** for **AMX Mod X** projects.
 
+# 📄 About
+
 This system will be useful for projects with multiple plugins and assets. Using the command-line interface you can build entire project with a single command. It also supports hot rebuild to keep your plugins and assets up to date during the work.
 
-⚠ Attention! This is an alpha version and may be unstable and contains a large number of bugs!
 
 ## 📚 Features
-- 🧸 Assets builder
 - ⚙ Flexible configuration
-- 🔥 Hot rebuild
+- 🔥 Hot reload
+- 🧸 Assets builder
 
-## ▶ Getting Started
-- Create new folder for your project
-- Execute `amxxpack init` command to create new config
-- Customize generated configuration based on the project structure
+## 🔧 Installation
+**AMXXPack** is available through the npm registry.
+Installation can be done using the `npm install` command:
+```
+npm install amxxpack
+```
+
+or install it globally to use as a system command
+```
+npm install -g amxxpack
+```
+
+## ▶ Quick start
+- Create new directory for your project
+- Open a terminal inside the project directory
+- Execute `npm init -y` command to init the package
+- Execute `npm install amxxpack --save-dev` command to install `amxxpack` locally
+- Execute `npx amxxpack init` command to create new config
+- Use `npx amxxpack build` command to build the project
+- Adding build scripts *(optional)*
+
+  To use `npm run build` and `npm run watch` to build or watch the project update the `scripts` section in `package.json`:
+  ```json
+    "scripts": {
+      "build": "amxxpack build",
+      "watch": "amxxpack build --watch"
+    }
+  ```
 
 ## 📋 Commands
 - `amxxpack init` init config for a new project
