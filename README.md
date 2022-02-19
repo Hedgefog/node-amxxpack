@@ -11,6 +11,9 @@ This system will be useful for projects with multiple plugins and assets. Using 
 - 🔥 Hot reload
 - 🧸 Assets builder
 
+## 🔄Requirements
+- Node.js 10.0.0+
+
 ## 🔧 Installation
 **AMXXPack** is available through the npm registry.
 Installation can be done using the `npm install` command:
@@ -29,6 +32,7 @@ npm install -g amxxpack
 - Execute `npm init -y` command to init the package
 - Execute `npm install amxxpack --save-dev` command to install `amxxpack` locally
 - Execute `npx amxxpack init` command to create new config
+- Extract the **Amx Mod X** compiler to the `./compiler` dir of the project (content of `scripting` folder).
 - Use `npx amxxpack build` command to build the project
 - Adding build scripts *(optional)*
 
