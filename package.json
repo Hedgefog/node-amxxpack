@@ -2,7 +2,7 @@
   "name": "amxxpack",
   "description": "AMXXPack",
   "author": "Hedgehog Fog",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "license": "MIT",
   "main": "lib/builder/index.js",
   "types": "lib/builder/index.d.ts",
