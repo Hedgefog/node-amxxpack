@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import https from 'https';
 import mkdirp from 'mkdirp';
 import normalizePath from 'normalize-path';
@@ -7,10 +8,10 @@ import decompress from 'decompress';
 
 import { resolveFileName, resolvePlatform, resolveSource, resolveUrl } from './resolvers';
 import { IDist, IDownloadCompilerOptions, IDistFile } from './types';
-import { DOWNLOAD_DIR, EXTENSIONS_IGNORE_LIST, SCRIPTING_DIR } from './constants';
+import { EXTENSIONS_IGNORE_LIST, SCRIPTING_DIR } from './constants';
 
 async function downloadDist(dist: IDist): Promise<IDistFile> {
-  const downloadDir = path.join(__dirname, '../..', DOWNLOAD_DIR);
+  const downloadDir = path.join(os.tmpdir(), '.amxxpack/downloads');
   await mkdirp(downloadDir);
 
   const fileName = resolveFileName(dist);
