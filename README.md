@@ -32,7 +32,7 @@ npm install -g amxxpack
 - Execute `npm init -y` command to init the package
 - Execute `npm install amxxpack --save-dev` command to install `amxxpack` locally
 - Execute `npx amxxpack init` command to create new config
-- Extract the **Amx Mod X** compiler to the `./compiler` dir of the project (content of `scripting` folder).
+- Execute `npx amxxpack fetch-compiler` to download latest compiler release
 - Use `npx amxxpack build` command to build the project
 - Adding build scripts *(optional)*
 
@@ -45,9 +45,14 @@ npm install -g amxxpack
   ```
 
 ## 📋 Commands
-- `amxxpack init` init config for a new project
-- `amxxpack build` command to build the project
-  - `--watch` flag to watch changes
-  - `--config` config file
-- `amxxpack compile <path|glob>` to compile specific plugin in the project
-  - `--config` config file
+- `amxxpack init` - init config for a new project
+- `amxxpack build` - command to build the project
+  - `--watch` - flag to watch changes
+  - `--config` - config file
+- `amxxpack compile <path|glob>` - compile specific plugin in the project
+  - `--config` - config file
+- `amxxpack fetch-compiler` - fetch amxmodx compiler
+  - `--config` - config file
+  - `--version` - compiler version
+  - `--addon` - addon name
+  - `--dev` - search for dev build
