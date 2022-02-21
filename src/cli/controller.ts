@@ -3,6 +3,7 @@ import fs from 'fs';
 import mkdirp from 'mkdirp';
 
 import AmxxBuilder, { IAmxxBuilderConfig } from '../builder';
+import downloadCompiler from '../compiler-downloader';
 
 function resolveConfigPath(configPath: string): string {
   return path.isAbsolute(configPath) ? configPath : path.join(process.cwd(), configPath);
@@ -66,6 +67,17 @@ class Controller {
     if (watch) {
       await builder.watch();
     }
+  }
+
+  public async fetchCompiler({ configPath, version, dev, addons }: {
+    configPath: string;
+    version: string;
+    dev: boolean;
+    addons: string[];
+  }): Promise<void> {
+    const config = await this.loadConfig(configPath);
+    const compilerPath = path.parse(config.compiler.executable).dir;
+    await downloadCompiler({ path: path.resolve(compilerPath), dists: addons, version, dev });
   }
 }
 
