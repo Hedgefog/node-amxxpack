@@ -25,6 +25,8 @@
         "@typescript-eslint/lines-between-class-members": "off",
         "react/jsx-filename-extension": "off",
         "object-curly-newline": "off",
+        "no-await-in-loop": "off",
+        "no-restricted-syntax": "off",
         "semi": "error"
     }
 }
