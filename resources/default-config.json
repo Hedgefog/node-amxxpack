@@ -1,6 +1,6 @@
 {
   "compiler": { 
-    "executable": "./compiler/amxxpc.exe",
+    "executable": "./compiler/amxxpc",
     "include": [
       "./compiler/include"
     ]
