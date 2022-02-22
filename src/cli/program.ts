@@ -36,16 +36,12 @@ program
   });
 
 program
-  .command('fetch-compiler')
+  .command('install')
   .option('--config, -c <path>', 'Config file', '.amxxpack.json')
-  .option('--version, -v <version>', 'Version', '1.8.2')
-  .option('--addon, -a <addon>', 'Addon', 'base')
-  .option('--dev, -d', 'Dev build flag', false)
   .action(async (str: string, options: any) => {
-    const { D: dev, A: addon, V: version, C: configPath } = options.opts();
-    const addons: string[] = addon.split(' ');
+    const { C: configPath } = options.opts();
 
-    await controller.fetchCompiler({ configPath, version, dev, addons });
+    await controller.install({ configPath });
   });
 
 export default program;

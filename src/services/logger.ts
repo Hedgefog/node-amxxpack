@@ -1,18 +1,9 @@
 import colors from 'colors/safe';
 
-export interface ILoggerOptions {
-  debug?: boolean;
-}
+import { ILoggerOptions } from './types';
+import { LogLevel } from './constants';
 
-export enum LogLevel {
-  Debug = 'debug',
-  Success = 'success',
-  Info = 'info',
-  Warning = 'warning',
-  Error = 'error'
-}
-
-export default class Logger {
+class Logger {
   private debugMode: boolean = false;
 
   constructor(options: ILoggerOptions = {}) {
@@ -81,3 +72,5 @@ export default class Logger {
     return '';
   }
 }
+
+export default Logger;

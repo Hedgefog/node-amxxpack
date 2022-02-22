@@ -1,4 +1,4 @@
-export default function accumulator() {
+function accumulator() {
   let value = '';
 
   return (data?: string) => {
@@ -6,3 +6,5 @@ export default function accumulator() {
     return value;
   };
 }
+
+export default accumulator;

@@ -4,42 +4,16 @@ import mkdirp from 'mkdirp';
 import glob from 'glob-promise';
 import chokidar from 'chokidar';
 import normalizePath from 'normalize-path';
-import { get } from 'lodash';
 
 import amxxpc, { AMXPCMessageType } from './amxxpc';
 import Logger from '../services/logger';
-import { IAmxxBuilderConfig } from './types';
+import { IProjectConfig } from '../types';
 import { ASSETS_PATH_PATTERN, INCLUDE_PATH_PATTERN, SCRIPTS_PATH_PATTERN } from './constants';
 
 export default class AmxxBuilder {
   private logger: Logger;
-  private config: Required<IAmxxBuilderConfig>;
-
-  constructor(config: IAmxxBuilderConfig) {
-    const { compiler, input, output, rules } = config;
-
+  constructor(private config: IProjectConfig) {
     this.logger = new Logger();
-
-    this.config = {
-      compiler: {
-        executable: path.resolve(compiler.executable),
-        include: compiler.include.map((include) => path.resolve(include))
-      },
-      input: {
-        scripts: path.resolve(input.scripts),
-        include: path.resolve(input.include),
-        assets: path.resolve(input.assets),
-      },
-      output: {
-        scripts: path.resolve(output.scripts),
-        plugins: path.resolve(output.plugins),
-        include: path.resolve(output.include),
-        assets: path.resolve(output.assets)
-      },
-      rules: {
-        flatCompilation: get(rules, 'flatCompilation', true)
-      }
-    };
   }
 
   async build(): Promise<void> {
@@ -154,15 +128,17 @@ export default class AmxxBuilder {
     }
 
     const relateiveSrcPath = path.relative(process.cwd(), srcPath);
+    const executable = path.join(this.config.compiler.dir, this.config.compiler.executable);
 
     await mkdirp(destDir);
 
     const result = await amxxpc({
       path: srcPath,
       dest: destDir,
-      compiler: this.config.compiler.executable,
+      compiler: executable,
       includeDir: [
-        ...this.config.compiler.include,
+        path.join(this.config.compiler.dir, 'include'),
+        ...this.config.include,
         this.config.input.include,
       ]
     });

@@ -2,47 +2,23 @@ import path from 'path';
 import fs from 'fs';
 import mkdirp from 'mkdirp';
 
-import AmxxBuilder, { IAmxxBuilderConfig } from '../builder';
-import downloadCompiler from '../compiler-downloader';
-
-function resolveConfigPath(configPath: string): string {
-  return path.isAbsolute(configPath) ? configPath : path.join(process.cwd(), configPath);
-}
+import AmxxBuilder from '../builder';
+import downloadCompiler from '../downloaders/compiler';
+import projectConfig from '../project-config';
 
 class Controller {
-  public async loadConfig(configPath: string): Promise<IAmxxBuilderConfig> {
-    const resolvedPath = resolveConfigPath(configPath);
-
-    if (!fs.existsSync(resolvedPath)) {
-      // eslint-disable-next-line no-console
-      console.log('Project is not initialzied! Use "init" command to initialize the project!');
-      process.exit(1);
-    }
-
-    // eslint-disable-next-line global-require, import/no-dynamic-require
-    const config = require(resolvedPath);
-
-    return config;
-  }
-
   public async createBuilder(configPath: string): Promise<AmxxBuilder> {
-    const config = await this.loadConfig(configPath);
+    const config = await projectConfig.resolve(configPath);
     const builder = new AmxxBuilder(config);
 
     return builder;
   }
 
   public async init(projectDir: string): Promise<void> {
+    const config = projectConfig.defaults;
     const configPath = path.join(projectDir, '.amxxpack.json');
 
-    await fs.promises.copyFile(
-      path.join(__dirname, '../../resources/default-config.json'),
-      configPath
-    );
-
-    const config = JSON.parse(
-      await fs.promises.readFile(configPath, 'utf8')
-    ) as IAmxxBuilderConfig;
+    await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2));
 
     await mkdirp(path.join(projectDir, config.input.assets));
     await mkdirp(path.join(projectDir, config.input.include));
@@ -69,15 +45,15 @@ class Controller {
     }
   }
 
-  public async fetchCompiler({ configPath, version, dev, addons }: {
-    configPath: string;
-    version: string;
-    dev: boolean;
-    addons: string[];
-  }): Promise<void> {
-    const config = await this.loadConfig(configPath);
-    const compilerPath = path.parse(config.compiler.executable).dir;
-    await downloadCompiler({ path: path.resolve(compilerPath), dists: addons, version, dev });
+  public async install({ configPath }: { configPath: string }) {
+    const config = await projectConfig.resolve(configPath);
+
+    await downloadCompiler({
+      path: config.compiler.dir,
+      dists: config.compiler.addons,
+      version: config.compiler.version,
+      dev: config.compiler.dev
+    });
   }
 }
 
