@@ -3,10 +3,10 @@ import path from 'path';
 import AmxxBuilder from '../builder';
 import downloadCompiler from '../downloaders/compiler';
 import downloadThirdparty from '../downloaders/thirdparty';
-import ProjectConfig from '../project-config';
-import { IProjectOptions } from './types';
 import ProjectCreator from './services/project-creator';
 import TemplateBuilder from './services/template-builder';
+import ProjectConfig from '../project-config';
+import { IProjectOptions } from './types';
 
 class Controller {
   public async createBuilder(configPath: string): Promise<AmxxBuilder> {

@@ -7,10 +7,10 @@ import { IDownloadThirdpartyOptions } from './types';
 import config from '../../config';
 
 async function downloadThirdparty(options: IDownloadThirdpartyOptions): Promise<void> {
-  const filePath = path.resolve(config.downloadDir, options.name);
+  const filePath = path.join(config.downloadDir, options.name);
   await download(options.url, filePath);
 
-  const outDir = path.resolve(options.dir);
+  const outDir = path.join(options.dir, options.name);
   await mkdirp(outDir);
 
   await decompress(filePath, outDir);
