@@ -20,6 +20,7 @@ program
 
 program
   .command('compile')
+  .alias('c')
   .argument('<path>', 'Script path or glob')
   .option('--config, -c <path>', 'Config file', config.projectConfig)
   .action(async (filePath: string, options: any) => {
@@ -29,6 +30,7 @@ program
 
 program
   .command('build')
+  .alias('b')
   .option('--watch, -w', 'Watch project')
   .option('--config, -c <path>', 'Config file', config.projectConfig)
   .action(async (_argument: string, options: any) => {
@@ -38,6 +40,7 @@ program
 
 program
   .command('install')
+  .alias('i')
   .option('--config, -c <path>', 'Config file', config.projectConfig)
   .action(async (_argument: string, options: any) => {
     const { C: configPath } = options.opts();
@@ -46,6 +49,7 @@ program
 
 program
   .command('new <type> [filename]')
+  .alias('n')
   .option('--config, -c <path>', 'Config file', config.projectConfig)
   .option('--name, -n <name>', 'Plugin name')
   .option('--version, -v <version>', 'Plugin version')
