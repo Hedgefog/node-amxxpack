@@ -12,10 +12,21 @@ program
   .description('Simple AmxModX CLI');
 
 program
-  .command('init')
+  .command('create')
+  .argument('<name>')
+  .option('--version, -v <version>', 'Project version')
+  .option('--author, -a <author>', 'Project author')
+  .option('--description, -d <author>', 'Project description')
+  .action(async (name: string, options: any) => {
+    const { V: version, A: author, D: description } = options;
+    await controller.create({ name, version, author, description });
+  });
+
+program
+  .command('config')
   .action(async () => {
     const projectDir = process.cwd();
-    await controller.init(projectDir);
+    await controller.config(projectDir);
   });
 
 program
@@ -48,8 +59,9 @@ program
   });
 
 program
-  .command('new <type> [filename]')
+  .command('new')
   .alias('n')
+  .arguments('<type> [filename]')
   .option('--config, -c <path>', 'Config file', config.projectConfig)
   .option('--name, -n <name>', 'Plugin name')
   .option('--version, -v <version>', 'Plugin version')
@@ -59,13 +71,12 @@ program
   .action(async (type: string, fileName: string, options: any) => {
     const { C: configPath, N: name, V: version, A: author, L: library } = options;
 
-    const include = options.I ? options.I.split(' ') : [];
+    const include = options.I ? options.I.split(/[\s|,]/) : [];
     if (!include.includes('amxmodx')) {
       include.unshift('amxmodx');
     }
 
     await controller.add(configPath, type, fileName, {
-      configPath,
       name,
       version,
       author,

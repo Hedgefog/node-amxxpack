@@ -2,11 +2,9 @@ import { map, merge } from 'lodash';
 import path from 'path';
 import fs from 'fs';
 
-import Logger from '../services/logger';
+import logger from '../logger/logger';
 import defaults from './defaults';
 import { IProjectConfig } from '../types';
-
-const logger = new Logger();
 
 async function resolve(_configPath: string): Promise<IProjectConfig> {
   const configPath = path.resolve(_configPath);

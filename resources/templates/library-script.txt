@@ -1,5 +1,5 @@
 {{INCLUDES}}
-#include <{{FILE_NAME}}>
+#include <{{INCLUDE_NAME}}>
 
 public plugin_init() {
   register_plugin("{{PLUGIN_NAME}}", "{{PLUGIN_VERSION}}", "{{PLUGIN_AUTHOR}}");

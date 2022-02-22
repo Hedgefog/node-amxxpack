@@ -1,3 +1,10 @@
 export interface IAddTemplateContext {
-  [key: string]: string
+  [key: string]: any;
+}
+
+export interface IProjectOptions {
+  name: string;
+  author: string;
+  description: string;
+  version: string;
 }

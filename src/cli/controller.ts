@@ -1,15 +1,12 @@
 import path from 'path';
-import fs from 'fs';
-import mkdirp from 'mkdirp';
-import { map } from 'lodash';
 
 import AmxxBuilder from '../builder';
 import downloadCompiler from '../downloaders/compiler';
 import downloadThirdparty from '../downloaders/thirdparty';
 import ProjectConfig from '../project-config';
-import { buildTemplate, createFileFromTemplate, resolveContext } from './template';
-import config from '../config';
-import { IAddTemplateContext } from './types';
+import { IProjectOptions } from './types';
+import ProjectCreator from './services/project-creator';
+import TemplateBuilder from './services/template-builder';
 
 class Controller {
   public async createBuilder(configPath: string): Promise<AmxxBuilder> {
@@ -19,15 +16,15 @@ class Controller {
     return builder;
   }
 
-  public async init(projectDir: string): Promise<void> {
-    const projectConfig = ProjectConfig.defaults;
-    const configPath = path.join(projectDir, config.projectConfig);
+  public async create(options: IProjectOptions): Promise<void> {
+    const projectCreator = new ProjectCreator(options);
+    await projectCreator.createProject();
+  }
 
-    await fs.promises.writeFile(configPath, JSON.stringify(projectConfig, null, 2));
-
-    await mkdirp(path.join(projectDir, projectConfig.input.assets));
-    await mkdirp(path.join(projectDir, projectConfig.input.include));
-    await mkdirp(path.join(projectDir, projectConfig.input.scripts));
+  public async config(projectDir: string): Promise<void> {
+    const projectCreator = new ProjectCreator();
+    projectCreator.projectDir = projectDir;
+    await projectCreator.createProject();
   }
 
   public async compile(scriptPath: string, configPath: string): Promise<void> {
@@ -70,107 +67,56 @@ class Controller {
   }
 
   public async add(configPath: string, type: string, fileName: string, options: {
-    configPath: string;
-    name: string;
-    version: string;
-    author: string;
-    library: string;
+    name?: string;
+    version?: string;
+    author?: string;
+    library?: string;
     include: string[];
   }): Promise<any> {
     const projectConfig = await ProjectConfig.resolve(configPath);
+    const { base: includeName } = path.parse(fileName);
 
-    const context = await resolveContext(projectConfig, {
+    const templateBuilder = new TemplateBuilder(projectConfig, {
       FILE_NAME: fileName,
-      PLUGIN_NAME: options.name || fileName,
+      PLUGIN_NAME: options.name,
       PLUGIN_VERSION: options.version,
       PLUGIN_AUTHOR: options.author,
-      LIBRARY_NAME: options.library || fileName.replace(/-/g, '_'),
-      INCLUDES: (
-        await Promise.all(
-          map(
-            options.include,
-            (includeName: string) => buildTemplate(
-              projectConfig,
-              'include-directive',
-              { FILE: includeName }
-            )
-          )
-        )
-      ).join('\n')
-    }, {
-      PLUGIN_NAME: fileName,
-      LIBRARY_NAME: fileName.replace(/-/g, '_')
-    });
+      LIBRARY_NAME: options.library || includeName.replace(/-/g, '_'),
+      INCLUDES: options.include,
+      INCLUDE_NAME: includeName
+    }, { PLUGIN_NAME: fileName });
 
     switch (type) {
       case 'script': {
-        await this.addScript(configPath, fileName, context);
+        await templateBuilder.createFileFromTemplate(
+          path.join(projectConfig.input.scripts, `${fileName}.sma`),
+          'script'
+        );
+
         break;
       }
       case 'include': {
-        await this.addInclude(configPath, fileName, context);
+        await templateBuilder.createFileFromTemplate(
+          path.join(projectConfig.input.include, `${fileName}.inc`),
+          'include',
+        );
+
         break;
       }
       case 'library': {
-        await this.addLibrary(configPath, fileName, context);
+        await templateBuilder.createFileFromTemplate(
+          path.join(projectConfig.input.scripts, `${fileName}.sma`),
+          'library-script'
+        );
+
+        await templateBuilder.createFileFromTemplate(
+          path.join(projectConfig.input.include, `${includeName}.inc`),
+          'library-include'
+        );
+
         break;
       }
     }
-  }
-
-  public async addScript(
-    configPath: string,
-    name: string,
-    context: IAddTemplateContext
-  ): Promise<void> {
-    const projectConfig = await ProjectConfig.resolve(configPath);
-
-    await createFileFromTemplate(
-      projectConfig,
-      path.join(projectConfig.input.scripts, `${name}.sma`),
-      'script',
-      context
-    );
-  }
-
-  public async addInclude(
-    configPath: string,
-    name: string,
-    context: IAddTemplateContext
-  ): Promise<void> {
-    const projectConfig = await ProjectConfig.resolve(configPath);
-
-    await createFileFromTemplate(
-      projectConfig,
-      path.join(projectConfig.input.include, `${name}.inc`),
-      'include',
-      context
-    );
-  }
-
-  public async addLibrary(
-    configPath: string,
-    name: string,
-    context: IAddTemplateContext
-  ): Promise<void> {
-    const { base: includeName } = path.parse(name);
-    const projectConfig = await ProjectConfig.resolve(configPath);
-
-    const newContext = { ...context, FILE_NAME: includeName, LIBRARY_NAME: includeName };
-
-    await createFileFromTemplate(
-      projectConfig,
-      path.join(projectConfig.input.scripts, `${name}.sma`),
-      'library-script',
-      newContext
-    );
-
-    await createFileFromTemplate(
-      projectConfig,
-      path.join(projectConfig.input.include, `${includeName}.inc`),
-      'library-include',
-      newContext
-    );
   }
 }
 
