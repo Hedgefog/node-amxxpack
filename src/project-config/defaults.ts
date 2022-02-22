@@ -26,5 +26,16 @@ export default {
   include: [],
   rules: {
     flatCompilation: true
+  },
+  cli: {
+    rules: {
+      overrideFiles: false,
+    },
+    templates: {
+      context: {
+        PLUGIN_VERSION: '1.0.0',
+        PLUGIN_AUTHOR: 'AMXXPack'
+      }
+    }
   }
 } as IProjectConfig;

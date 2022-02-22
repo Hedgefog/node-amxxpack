@@ -1,0 +1,5 @@
+#if defined _{{FILE_NAME}}_included
+  #endinput
+#endif
+#define _{{FILE_NAME}}_included
+

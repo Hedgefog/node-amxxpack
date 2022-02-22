@@ -28,4 +28,19 @@ export interface IProjectConfig {
   rules: {
     flatCompilation: boolean;
   };
+  cli: {
+    rules: {
+      overrideFiles: boolean;
+    },
+    templates: {
+      context: { [key: string]: string },
+      files?: {
+        includeDirective: string;
+        include: string;
+        libraryInclude: string;
+        libraryScript: string;
+        script: string;
+      }
+    };
+  };
 }
