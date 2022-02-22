@@ -17,6 +17,13 @@ export interface IProjectConfig {
     dev: boolean;
     executable: string;
   };
+  thirdparty: {
+    dir: string,
+    dependencies: {
+      name: string;
+      url: string;
+    }[];
+  };
   include: string[];
   rules: {
     flatCompilation: boolean;

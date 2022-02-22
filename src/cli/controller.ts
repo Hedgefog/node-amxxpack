@@ -4,6 +4,7 @@ import mkdirp from 'mkdirp';
 
 import AmxxBuilder from '../builder';
 import downloadCompiler from '../downloaders/compiler';
+import downloadThirdparty from '../downloaders/thirdparty';
 import projectConfig from '../project-config';
 
 class Controller {
@@ -54,6 +55,14 @@ class Controller {
       version: config.compiler.version,
       dev: config.compiler.dev
     });
+
+    for (const dependency of config.thirdparty.dependencies) {
+      await downloadThirdparty({
+        name: dependency.name,
+        url: dependency.url,
+        dir: config.thirdparty.dir
+      });
+    }
   }
 }
 

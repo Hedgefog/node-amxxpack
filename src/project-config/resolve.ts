@@ -36,6 +36,9 @@ async function resolve(_configPath: string): Promise<IProjectConfig> {
     include: map(config.include, (include) => path.resolve(include)),
     compiler: {
       dir: path.resolve(config.compiler.dir),
+    },
+    thirdparty: {
+      dir: path.resolve(config.thirdparty.dir)
     }
   });
 

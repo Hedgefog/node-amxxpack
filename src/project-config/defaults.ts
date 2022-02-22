@@ -19,6 +19,10 @@ export default {
     addons: [],
     executable: 'amxxpc'
   },
+  thirdparty: {
+    dir: './.thirdparty',
+    dependencies: []
+  },
   include: [],
   rules: {
     flatCompilation: true
