@@ -1,7 +1,8 @@
 import os from 'os';
 
+import { CompilerPlatform, DistSource } from './constants';
+import config from '../../config';
 import { IDist } from './types';
-import { CompilerPlatform, DistSource, DOWNLOAD_HOST } from './constants';
 
 export function resolveSource({ dev, version }: IDist) {
   const urlPath: string[] = [
@@ -35,5 +36,5 @@ export function resolvePlatform() {
 }
 
 export function resolveUrl(source: string, file: string) {
-  return `${DOWNLOAD_HOST}/${source}/${file}`;
+  return `${config.downloadHost}/${source}/${file}`;
 }

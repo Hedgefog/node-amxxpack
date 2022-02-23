@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
+import config from '../config';
 
 import controller from './controller';
 
@@ -11,41 +12,81 @@ program
   .description('Simple AmxModX CLI');
 
 program
-  .command('init')
+  .command('create')
+  .argument('<name>', 'Project name')
+  .option('--version, -v <version>', 'Project version')
+  .option('--author, -a <author>', 'Project author')
+  .option('--description, -d <author>', 'Project description')
+  .option('--nonpm', 'Don\'t initialize npm package', false)
+  .option('--git', 'Initialize git', false)
+  .action(async (name: string, options: any) => {
+    const { V: version, A: author, D: description, nonpm, git } = options;
+    await controller.create({ name, version, author, description, nonpm, git });
+  });
+
+program
+  .command('config')
   .action(async () => {
     const projectDir = process.cwd();
-    await controller.init(projectDir);
+    await controller.config(projectDir);
   });
 
 program
   .command('compile')
+  .alias('c')
   .argument('<path>', 'Script path or glob')
-  .option('--config, -c <path>', 'Config file', '.amxxpack.json')
-  .action(async (str: string, options: any) => {
+  .option('--config, -c <path>', 'Config file', config.projectConfig)
+  .action(async (filePath: string, options: any) => {
     const { C: configPath } = options;
-    await controller.compile(str, configPath);
+    await controller.compile(filePath, configPath);
   });
 
 program
   .command('build')
+  .alias('b')
+  .option('--config, -c <path>', 'Config file', config.projectConfig)
   .option('--watch, -w', 'Watch project')
-  .option('--config, -c <path>', 'Config file', '.amxxpack.json')
-  .action(async (str: string, options: any) => {
+  .action(async (_argument: string, options: any) => {
     const { C: configPath, W: watch } = options.opts();
     await controller.build(configPath, watch);
   });
 
 program
-  .command('fetch-compiler')
-  .option('--config, -c <path>', 'Config file', '.amxxpack.json')
-  .option('--version, -v <version>', 'Version', '1.8.2')
-  .option('--addon, -a <addon>', 'Addon', 'base')
-  .option('--dev, -d', 'Dev build flag', false)
-  .action(async (str: string, options: any) => {
-    const { D: dev, A: addon, V: version, C: configPath } = options.opts();
-    const addons: string[] = addon.split(' ');
+  .command('install')
+  .alias('i')
+  .option('--config, -c <path>', 'Config file', config.projectConfig)
+  .action(async (_argument: string, options: any) => {
+    const { C: configPath } = options.opts();
+    await controller.install(configPath);
+  });
 
-    await controller.fetchCompiler({ configPath, version, dev, addons });
+program
+  .command('new')
+  .alias('n')
+  .arguments('<type> <filename>')
+  .option('--config, -c <path>', 'Config file', config.projectConfig)
+  .option('--name, -n <name>', 'Plugin name')
+  .option('--version, -v <version>', 'Plugin version')
+  .option('--author, -a <author>', 'Plugin author')
+  .option('--library, -l <library>', 'Library name')
+  .option('--include, -i <include>', 'Add include')
+  .option('--overwrite', 'Overwrite file if it already exists', false)
+  .action(async (type: string, fileName: string, options: any) => {
+    const { C: configPath, N: name, V: version, A: author, L: library, overwrite } = options;
+
+    const include = options.I ? options.I.split(/[\s|,]/) : [];
+    if (!include.includes('amxmodx')) {
+      include.unshift('amxmodx');
+    }
+
+    await controller.add(configPath, type, fileName, {
+      name,
+      version,
+      author,
+      library,
+      include,
+      overwrite
+    });
   });
 
 export default program;

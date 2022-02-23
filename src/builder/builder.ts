@@ -4,50 +4,21 @@ import mkdirp from 'mkdirp';
 import glob from 'glob-promise';
 import chokidar from 'chokidar';
 import normalizePath from 'normalize-path';
-import { get } from 'lodash';
 
 import amxxpc, { AMXPCMessageType } from './amxxpc';
-import Logger from '../services/logger';
-import { IAmxxBuilderConfig } from './types';
+import { IProjectConfig } from '../types';
 import { ASSETS_PATH_PATTERN, INCLUDE_PATH_PATTERN, SCRIPTS_PATH_PATTERN } from './constants';
+import logger from '../logger/logger';
 
 export default class AmxxBuilder {
-  private logger: Logger;
-  private config: Required<IAmxxBuilderConfig>;
-
-  constructor(config: IAmxxBuilderConfig) {
-    const { compiler, input, output, rules } = config;
-
-    this.logger = new Logger();
-
-    this.config = {
-      compiler: {
-        executable: path.resolve(compiler.executable),
-        include: compiler.include.map((include) => path.resolve(include))
-      },
-      input: {
-        scripts: path.resolve(input.scripts),
-        include: path.resolve(input.include),
-        assets: path.resolve(input.assets),
-      },
-      output: {
-        scripts: path.resolve(output.scripts),
-        plugins: path.resolve(output.plugins),
-        include: path.resolve(output.include),
-        assets: path.resolve(output.assets)
-      },
-      rules: {
-        flatCompilation: get(rules, 'flatCompilation', true)
-      }
-    };
-  }
+  constructor(private config: IProjectConfig) {}
 
   async build(): Promise<void> {
-    this.logger.info('Building...');
+    logger.info('Building...');
     await this.buildAssets();
     await this.buildInclude();
     await this.buildSrc();
-    this.logger.success('Build finished!');
+    logger.success('Build finished!');
   }
 
   async watch(): Promise<void> {
@@ -115,7 +86,7 @@ export default class AmxxBuilder {
 
     await mkdirp(this.config.output.scripts);
     await fs.promises.copyFile(srcPath, destPath);
-    this.logger.info('Script updated:', normalizePath(destPath));
+    logger.info('Script updated:', normalizePath(destPath));
   }
 
   async updateAsset(filePath: string): Promise<void> {
@@ -125,7 +96,7 @@ export default class AmxxBuilder {
 
     await mkdirp(path.parse(destPath).dir);
     await fs.promises.copyFile(srcPath, destPath);
-    this.logger.info('Asset updated', normalizePath(destPath));
+    logger.info('Asset updated', normalizePath(destPath));
   }
 
   async updateInclude(filePath: string): Promise<void> {
@@ -134,7 +105,7 @@ export default class AmxxBuilder {
 
     await mkdirp(this.config.output.include);
     await fs.promises.copyFile(srcPath, destPath);
-    this.logger.info('Include updated:', normalizePath(destPath));
+    logger.info('Include updated:', normalizePath(destPath));
   }
 
   async findPlugins(pattern: string): Promise<string[]> {
@@ -154,15 +125,17 @@ export default class AmxxBuilder {
     }
 
     const relateiveSrcPath = path.relative(process.cwd(), srcPath);
+    const executable = path.join(this.config.compiler.dir, this.config.compiler.executable);
 
     await mkdirp(destDir);
 
     const result = await amxxpc({
       path: srcPath,
       dest: destDir,
-      compiler: this.config.compiler.executable,
+      compiler: executable,
       includeDir: [
-        ...this.config.compiler.include,
+        path.join(this.config.compiler.dir, 'include'),
+        ...this.config.include,
         this.config.input.include,
       ]
     });
@@ -171,19 +144,19 @@ export default class AmxxBuilder {
       const { startLine, type, code, text } = message;
 
       if (type === AMXPCMessageType.Error || type === AMXPCMessageType.FatalError) {
-        this.logger.error(`${normalizePath(relateiveSrcPath)}(${startLine})`, type, code, ':', text);
+        logger.error(`${normalizePath(relateiveSrcPath)}(${startLine})`, type, code, ':', text);
       } else if (type === AMXPCMessageType.Warning) {
-        this.logger.warn(`${normalizePath(relateiveSrcPath)}(${startLine})`, type, code, ':', text);
+        logger.warn(`${normalizePath(relateiveSrcPath)}(${startLine})`, type, code, ':', text);
       } else if (type === AMXPCMessageType.Echo) {
-        this.logger.debug(text);
+        logger.debug(text);
       }
     });
 
     if (result.success) {
       const destPath = path.join(destDir, result.plugin);
       const relativeFilePath = path.relative(process.cwd(), filePath);
-      this.logger.success('Compilation success:', normalizePath(relativeFilePath));
-      this.logger.info('Plugin updated:', normalizePath(destPath));
+      logger.success('Compilation success:', normalizePath(relativeFilePath));
+      logger.info('Plugin updated:', normalizePath(destPath));
     } else {
       throw new Error(`Failed to compile ${normalizePath(relateiveSrcPath)} : "${result.error}"`);
     }
@@ -211,7 +184,7 @@ export default class AmxxBuilder {
     const watcher = chokidar.watch(pathPattern, { ignoreInitial: true });
 
     const updateFn = (filePath: string) => cb(filePath).catch(
-      (err: Error) => this.logger.error(err.message)
+      (err: Error) => logger.error(err.message)
     );
 
     watcher.on('add', updateFn);
