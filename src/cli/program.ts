@@ -63,7 +63,7 @@ program
 program
   .command('new')
   .alias('n')
-  .arguments('<type> [filename]')
+  .arguments('<type> <filename>')
   .option('--config, -c <path>', 'Config file', config.projectConfig)
   .option('--name, -n <name>', 'Plugin name')
   .option('--version, -v <version>', 'Plugin version')
