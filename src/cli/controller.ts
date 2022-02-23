@@ -72,6 +72,7 @@ class Controller {
     version?: string;
     author?: string;
     library?: string;
+    overwrite: boolean;
     include: string[];
   }): Promise<any> {
     const projectConfig = await ProjectConfig.resolve(configPath);
@@ -91,7 +92,8 @@ class Controller {
       case 'script': {
         await templateBuilder.createFileFromTemplate(
           path.join(projectConfig.input.scripts, `${fileName}.sma`),
-          'script'
+          'script',
+          options.overwrite
         );
 
         break;
@@ -100,6 +102,7 @@ class Controller {
         await templateBuilder.createFileFromTemplate(
           path.join(projectConfig.input.include, `${fileName}.inc`),
           'include',
+          options.overwrite
         );
 
         break;
@@ -107,12 +110,14 @@ class Controller {
       case 'lib': {
         await templateBuilder.createFileFromTemplate(
           path.join(projectConfig.input.scripts, `${fileName}.sma`),
-          'library-script'
+          'library-script',
+          options.overwrite
         );
 
         await templateBuilder.createFileFromTemplate(
           path.join(projectConfig.input.include, `${includeName}.inc`),
-          'library-include'
+          'library-include',
+          options.overwrite
         );
 
         break;

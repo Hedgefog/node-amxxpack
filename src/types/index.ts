@@ -29,9 +29,6 @@ export interface IProjectConfig {
     flatCompilation: boolean;
   };
   cli: {
-    rules: {
-      overrideFiles: boolean;
-    },
     templates: {
       context: { [key: string]: string },
       files?: {

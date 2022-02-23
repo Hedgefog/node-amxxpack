@@ -70,8 +70,9 @@ program
   .option('--author, -a <author>', 'Plugin author')
   .option('--library, -l <library>', 'Library name')
   .option('--include, -i <include>', 'Add include')
+  .option('--overwrite', 'Overwrite file if it already exists', false)
   .action(async (type: string, fileName: string, options: any) => {
-    const { C: configPath, N: name, V: version, A: author, L: library } = options;
+    const { C: configPath, N: name, V: version, A: author, L: library, overwrite } = options;
 
     const include = options.I ? options.I.split(/[\s|,]/) : [];
     if (!include.includes('amxmodx')) {
@@ -83,7 +84,8 @@ program
       version,
       author,
       library,
-      include
+      include,
+      overwrite
     });
   });
 

@@ -46,7 +46,11 @@ class TemplateBuilder {
     return data;
   }
 
-  async createFileFromTemplate(filePath: string, template: string): Promise<void> {
+  async createFileFromTemplate(
+    filePath: string,
+    template: string,
+    overwrite: boolean
+  ): Promise<void> {
     const { dir } = path.parse(filePath);
     await mkdirp(dir);
 
@@ -65,7 +69,7 @@ class TemplateBuilder {
     await fs.promises.writeFile(
       filePath,
       await this.buildTemplate(template, { INCLUDES: rawIncludes }),
-      { flag: this.projectConfig.cli.rules.overrideFiles ? 'w' : 'wx' }
+      { flag: overwrite ? 'w' : 'wx' }
     );
   }
 }

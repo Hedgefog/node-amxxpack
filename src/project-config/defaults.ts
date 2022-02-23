@@ -28,9 +28,6 @@ export default {
     flatCompilation: true
   },
   cli: {
-    rules: {
-      overrideFiles: false,
-    },
     templates: {
       context: {
         PLUGIN_VERSION: '1.0.0',
