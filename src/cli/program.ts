@@ -13,7 +13,7 @@ program
 
 program
   .command('create')
-  .argument('[name]', 'Project name', '.')
+  .argument('<name>', 'Project name')
   .option('--version, -v <version>', 'Project version')
   .option('--author, -a <author>', 'Project author')
   .option('--description, -d <author>', 'Project description')
