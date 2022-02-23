@@ -104,6 +104,7 @@ class ProjectCreator {
   public async installDependencies() {
     logger.info('🔄 Installing dependencies...');
     await this.execCommand('npm install amxxpack --save-dev');
+    await this.execCommand('npm run postinstall');
   }
 
   public async initGit() {
