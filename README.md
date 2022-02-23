@@ -56,6 +56,7 @@ npm install -g amxxpack
   - `--author` - plugin author
   - `--lib` - library name
   - `--include` - include list separated by a comma
+  - `--overwrite` - overwrite file if it already exists
 - `amxpack i` - alias to `install` command
 - `amxpack n` - alias to `new` command
 - `amxpack b` - alias to `build` command
