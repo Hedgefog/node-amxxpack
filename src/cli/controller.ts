@@ -103,7 +103,7 @@ class Controller {
 
         break;
       }
-      case 'library': {
+      case 'lib': {
         await templateBuilder.createFileFromTemplate(
           path.join(projectConfig.input.scripts, `${fileName}.sma`),
           'library-script'
