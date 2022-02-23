@@ -7,6 +7,7 @@ import ProjectCreator from './services/project-creator';
 import TemplateBuilder from './services/template-builder';
 import ProjectConfig from '../project-config';
 import { IProjectOptions } from './types';
+import logger from '../logger/logger';
 
 class Controller {
   public async createBuilder(configPath: string): Promise<AmxxBuilder> {
@@ -115,6 +116,9 @@ class Controller {
         );
 
         break;
+      }
+      default: {
+        logger.error(`Invalid file type "${type}"!`);
       }
     }
   }
