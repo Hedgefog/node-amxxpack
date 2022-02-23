@@ -9,4 +9,5 @@ export interface IProjectOptions {
   version: string;
   nonpm: boolean;
   git: boolean;
+  cwd?: string;
 }

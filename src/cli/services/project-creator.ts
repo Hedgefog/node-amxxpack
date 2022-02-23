@@ -20,16 +20,23 @@ class ProjectCreator {
     options: IProjectOptions = null
   ) {
     if (options) {
+      if (!options.name) {
+        throw new Error('Project name cannot be empty!');
+      }
+
       this.isCurrentDir = options.name === '.';
+
+      const cwd = options.cwd || process.cwd();
 
       this.options = {
         ...options,
-        name: this.isCurrentDir ? path.basename(path.resolve(process.cwd())) : options.name
+        name: this.isCurrentDir ? path.basename(cwd) : options.name,
+        cwd: options.cwd || cwd
       };
 
       this.projectDir = this.isCurrentDir
-        ? process.cwd()
-        : path.join(process.cwd(), this.options.name);
+        ? cwd
+        : path.join(cwd, this.options.name);
     }
 
     this.projectConfig = ProjectConfig.defaults;
@@ -57,7 +64,7 @@ class ProjectCreator {
       await this.initGit();
     }
 
-    if (fs.existsSync(path.join(this.projectDir, 'package.json'))) {
+    if (this.isNpmPackageInitialized()) {
       await this.installDependencies();
     }
 
@@ -137,6 +144,11 @@ class ProjectCreator {
 
     stream.write(lines.join('\n'));
     stream.write('\n');
+
+    await new Promise((resolve) => {
+      stream.on('close', resolve);
+    });
+
     stream.end();
   }
 
@@ -146,6 +158,10 @@ class ProjectCreator {
 
   public isGitInitialized(): boolean {
     return fs.existsSync(path.join(this.projectDir, '.git'));
+  }
+
+  public isNpmPackageInitialized(): boolean {
+    return fs.existsSync(path.join(this.projectDir, 'package.json'));
   }
 
   public execCommand(command: string) {
