@@ -29,7 +29,7 @@ npm install -g amxxpack
 ## ▶ Quick start
 - Open a terminal inside the project directory (existing or create a new one)
 - Execute `npm install amxxpack --save-dev` command to install `amxxpack` locally
-- Execute `npx amxxpack create` command to create new config
+- Execute `npx amxxpack create .` command to create new config
 - Execute `npx amxxpack install` to download project dependencies (compiler, thirdparty etc.)
 - Use `npm run build` command to build the project
 - Use `npm run watch` command to build the project and watch changes
