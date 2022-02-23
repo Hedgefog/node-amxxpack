@@ -11,6 +11,7 @@
     "resources/**/*"
   ],
   "scripts": {
+    "test": "jest",
     "build": "tsc",
     "lint": "eslint",
     "prepare": "npm run build"
