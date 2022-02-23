@@ -27,32 +27,36 @@ npm install -g amxxpack
 ```
 
 ## ▶ Quick start
-- Create new directory for your project
-- Open a terminal inside the project directory
-- Execute `npm init -y` command to init the package
+- Open a terminal inside the project directory (existing or create a new one)
 - Execute `npm install amxxpack --save-dev` command to install `amxxpack` locally
-- Execute `npx amxxpack init` command to create new config
-- Execute `npx amxxpack fetch-compiler` to download latest compiler release
-- Use `npx amxxpack build` command to build the project
-- Adding build scripts *(optional)*
-
-  To use `npm run build` and `npm run watch` to build or watch the project update the `scripts` section in `package.json`:
-  ```json
-    "scripts": {
-      "build": "amxxpack build",
-      "watch": "amxxpack build --watch"
-    }
-  ```
+- Execute `npx amxxpack create` command to create new config
+- Execute `npx amxxpack install` to download project dependencies (compiler, thirdparty etc.)
+- Use `npm run build` command to build the project
+- Use `npm run watch` command to build the project and watch changes
 
 ## 📋 Commands
-- `amxxpack init` - init config for a new project
+- `amxxpack create <name>` - create new project
+  - `--git` - initialize git
+  - `--nonpm` - don't initialize npm pacakge 
+  - `--version` - project version
+  - `--author` - project author
+  - `--description` - project name
+- `amxxpack config` - initialize project config in current workspace
+- `amxxpack install` - install project dependencies
+  - `--config` - config file
 - `amxxpack build` - command to build the project
   - `--watch` - flag to watch changes
   - `--config` - config file
 - `amxxpack compile <path|glob>` - compile specific plugin in the project
   - `--config` - config file
-- `amxxpack fetch-compiler` - fetch amxmodx compiler
+- `amxxpack new <script|lib|include> [name]` - create new file in the project workspace
   - `--config` - config file
-  - `--version` - compiler version
-  - `--addon` - addon name
-  - `--dev` - search for dev build
+  - `--name` - plugin name
+  - `--version` - plugin version
+  - `--author` - plugin author
+  - `--lib` - library name
+  - `--include` - include list separated by a comma
+- `amxpack i` - alias to `install` command
+- `amxpack n` - alias to `new` command
+- `amxpack b` - alias to `build` command
+- `amxpack c` - alias to `compile` command
