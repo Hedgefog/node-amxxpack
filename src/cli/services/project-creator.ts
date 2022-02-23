@@ -134,22 +134,13 @@ class ProjectCreator {
     addDir(this.projectConfig.thirdparty.dir);
     addDir(this.projectConfig.output.assets);
 
-    const isNew = !fs.existsSync(filePath);
-
-    const stream = fs.createWriteStream(filePath, { flags: 'a' });
-
-    if (!isNew) {
-      stream.write('\n');
+    if (fs.existsSync(filePath)) {
+      lines.unshift('');
     }
 
-    stream.write(lines.join('\n'));
-    stream.write('\n');
+    lines.push('');
 
-    await new Promise((resolve) => {
-      stream.on('close', resolve);
-    });
-
-    stream.end();
+    await fs.promises.appendFile(filePath, lines.join('\n'));
   }
 
   public isInitialized(): boolean {
