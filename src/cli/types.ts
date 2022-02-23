@@ -7,4 +7,6 @@ export interface IProjectOptions {
   author: string;
   description: string;
   version: string;
+  nonpm: boolean;
+  git: boolean;
 }

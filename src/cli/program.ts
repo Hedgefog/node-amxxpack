@@ -17,9 +17,11 @@ program
   .option('--version, -v <version>', 'Project version')
   .option('--author, -a <author>', 'Project author')
   .option('--description, -d <author>', 'Project description')
+  .option('--nonpm', 'Don\'t initialize npm package', false)
+  .option('--git', 'Initialize git', false)
   .action(async (name: string, options: any) => {
-    const { V: version, A: author, D: description } = options;
-    await controller.create({ name, version, author, description });
+    const { V: version, A: author, D: description, nonpm, git } = options;
+    await controller.create({ name, version, author, description, nonpm, git });
   });
 
 program
@@ -42,8 +44,8 @@ program
 program
   .command('build')
   .alias('b')
-  .option('--watch, -w', 'Watch project')
   .option('--config, -c <path>', 'Config file', config.projectConfig)
+  .option('--watch, -w', 'Watch project')
   .action(async (_argument: string, options: any) => {
     const { C: configPath, W: watch } = options.opts();
     await controller.build(configPath, watch);
