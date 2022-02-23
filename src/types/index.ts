@@ -32,11 +32,11 @@ export interface IProjectConfig {
     templates: {
       context: { [key: string]: string },
       files?: {
-        includeDirective: string;
-        include: string;
-        libraryInclude: string;
-        libraryScript: string;
-        script: string;
+        includeDirective?: string;
+        include?: string;
+        libraryInclude?: string;
+        libraryScript?: string;
+        script?: string;
       }
     };
   };
