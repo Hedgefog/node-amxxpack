@@ -25,7 +25,7 @@ class Controller {
   public async config(projectDir: string): Promise<void> {
     const projectCreator = new ProjectCreator();
     projectCreator.projectDir = projectDir;
-    await projectCreator.createProject();
+    await projectCreator.createConfig();
   }
 
   public async compile(scriptPath: string, configPath: string): Promise<void> {
