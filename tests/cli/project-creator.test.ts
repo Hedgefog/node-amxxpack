@@ -37,7 +37,7 @@ describe('', () => {
   beforeAll(() => {
     jest.spyOn(ProjectCreator.prototype, 'createConfig');
     jest.spyOn(ProjectCreator.prototype, 'createDirectories');
-    jest.spyOn(ProjectCreator.prototype, 'createPackage');
+    jest.spyOn(ProjectCreator.prototype, 'updatePackage');
     jest.spyOn(ProjectCreator.prototype, 'installDependencies').mockImplementation(
       async function installDependencies(this: ProjectCreator) {
         await mkdirp(path.join((this as any).projectDir, 'node_modules'));
@@ -76,6 +76,15 @@ describe('', () => {
     expect(fs.existsSync(path.join(PROJECT_PATH, projectConfig.input.include))).toBe(true);
     expect(fs.existsSync(path.join(PROJECT_PATH, projectConfig.input.scripts))).toBe(true);
     expect(fs.existsSync(path.join(PROJECT_PATH, 'package.json'))).toBe(true);
+  });
+
+  it('should merge package', async () => {
+    const projectCreator = new ProjectCreator({ ...defaultProjectOptions, git: true });
+
+    await projectCreator.createProject();
+    expect(projectCreator.initGit).toBeCalled();
+    expect(fs.existsSync(path.join(PROJECT_PATH, '.git'))).toBe(true);
+    expect(fs.existsSync(path.join(PROJECT_PATH, '.gitignore'))).toBe(true);
   });
 
   it('should initialize git on project create', async () => {
@@ -118,7 +127,7 @@ describe('', () => {
     const projectCreator = new ProjectCreator({ ...defaultProjectOptions, nonpm: true });
 
     await projectCreator.createProject();
-    expect(projectCreator.createPackage).not.toBeCalled();
+    expect(projectCreator.updatePackage).not.toBeCalled();
     expect(projectCreator.installDependencies).not.toBeCalled();
   });
 
@@ -126,7 +135,7 @@ describe('', () => {
     const projectCreator = new ProjectCreator({ ...defaultProjectOptions });
 
     await projectCreator.createProject();
-    expect(projectCreator.createPackage).toBeCalled();
+    expect(projectCreator.updatePackage).toBeCalled();
     expect(projectCreator.installDependencies).toBeCalled();
   });
 });
