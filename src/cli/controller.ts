@@ -32,14 +32,11 @@ class Controller {
     const builder = await this.createBuilder(configPath);
 
     const matches = await builder.findPlugins(scriptPath);
-    matches.map(async (filePath: string) => {
-      if (path.extname(filePath) !== '.sma') {
-        return;
-      }
 
+    for (const filePath of matches) {  
       const srcPath = path.resolve(filePath);
       await builder.compilePlugin(srcPath);
-    });
+    }
   }
 
   public async build(configPath: string, watch: boolean): Promise<void> {

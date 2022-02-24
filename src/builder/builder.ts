@@ -112,7 +112,7 @@ export default class AmxxBuilder {
     const pathPattern = path.join(this.config.input.scripts, '**', pattern);
     const matches = await glob(pathPattern);
 
-    return matches;
+    return matches.filter((filePath) => path.extname(filePath) === '.sma');
   }
 
   async compilePlugin(filePath: string): Promise<void> {
