@@ -33,6 +33,10 @@ class Controller {
 
     const matches = await builder.findPlugins(scriptPath);
     matches.map(async (filePath: string) => {
+      if (path.extname(filePath) !== '.sma') {
+        return;
+      }
+
       const srcPath = path.resolve(filePath);
       await builder.compilePlugin(srcPath);
     });
