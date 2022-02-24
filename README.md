@@ -31,8 +31,8 @@ npm install -g amxxpack
 - Execute `npm install amxxpack -g` command to install `amxxpack` globally
 - Execute `amxxpack create .` command to create new config
 - Execute `amxxpack install` to download project dependencies (compiler, thirdparty etc.)
-- Use `npm run build` command to build the project
-- Use `npm run watch` command to build the project and watch changes
+- Use `amxxpack build` command to build the project
+- Use `amxxpack watch` command to build the project and watch changes
 
 ## 📋 Commands
 - `amxxpack create <name>` - create new project
