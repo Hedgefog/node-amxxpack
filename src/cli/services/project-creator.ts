@@ -64,12 +64,12 @@ class ProjectCreator {
       await this.initGit();
     }
 
-    if (this.isNpmPackageInitialized()) {
-      await this.installDependencies();
-    }
-
     if (this.isGitInitialized()) {
       await this.updateGitignore();
+    }
+
+    if (this.isNpmPackageInitialized()) {
+      await this.installDependencies();
     }
 
     logger.success('Your project is ready! Thanks for using AMXXPack CLI! 🤗');
