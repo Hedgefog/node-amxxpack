@@ -44,6 +44,10 @@ export default class AmxxBuilder {
   }
 
   async buildAssets(): Promise<void> {
+    if (!this.config.input.assets) {
+      return;
+    }
+
     await this.buildDir(
       this.config.input.assets,
       ASSETS_PATH_PATTERN,
@@ -68,6 +72,10 @@ export default class AmxxBuilder {
   }
 
   async watchAssets(): Promise<void> {
+    if (!this.config.input.assets) {
+      return;
+    }
+
     await this.watchDir(
       this.config.input.assets,
       ASSETS_PATH_PATTERN,
@@ -81,6 +89,10 @@ export default class AmxxBuilder {
   }
 
   async updateScript(filePath: string): Promise<void> {
+    if (!this.config.output.scripts) {
+      return;
+    }
+
     const srcPath = path.resolve(filePath);
     const destPath = path.join(this.config.output.scripts, path.parse(filePath).base);
 
