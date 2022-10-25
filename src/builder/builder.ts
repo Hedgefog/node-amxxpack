@@ -194,7 +194,7 @@ export default class AmxxBuilder {
     cb: (filePath: string) => any
   ): Promise<void> {
     const pathPattern = path.join(baseDir, pattern);
-    const watcher = chokidar.watch(pathPattern, { ignoreInitial: true });
+    const watcher = chokidar.watch(pathPattern, { ignoreInitial: true, interval: 300 });
 
     const updateFn = (filePath: string) => cb(filePath).catch(
       (err: Error) => logger.error(err.message)
