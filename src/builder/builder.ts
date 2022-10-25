@@ -154,7 +154,7 @@ export default class AmxxBuilder {
 
     result.output.messages.forEach((message) => {
       const { startLine, type, code, text, filename } = message;
-      const relativeFilePath = path.relative(process.cwd(), filename);
+      const relativeFilePath = filename ? path.relative(process.cwd(), filename) : relateiveSrcPath;
 
       if (type === AMXPCMessageType.Error || type === AMXPCMessageType.FatalError) {
         logger.error(`${normalizePath(relativeFilePath)}(${startLine})`, type, code, ':', text);
