@@ -1,4 +1,4 @@
-# 📦 AMXXPack [![npm](https://img.shields.io/npm/v/amxxpack.svg)](https://www.npmjs.com/package/amxxpack)
+# 📦 AMXXPack 🇺🇦 [![npm](https://img.shields.io/npm/v/amxxpack.svg)](https://www.npmjs.com/package/amxxpack)
 Simple build system and **CLI** for **AMX Mod X** projects.
 
 # 📄 About
