@@ -1,7 +1,7 @@
 # 📦 AMXXPack 🇺🇦 [![npm](https://img.shields.io/npm/v/amxxpack.svg)](https://www.npmjs.com/package/amxxpack)
 Simple build system and **CLI** for **AMX Mod X** projects.
 
-# 📄 About
+## 📄 About
 
 This system will be useful for projects with multiple plugins and assets. Using the command-line interface you can build entire project with a single command. It also supports hot rebuild to keep your plugins and assets up to date during the work.
 
