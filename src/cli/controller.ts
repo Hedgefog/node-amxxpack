@@ -33,18 +33,24 @@ class Controller {
 
     const matches = await builder.findPlugins(scriptPath);
 
-    for (const filePath of matches) {  
+    for (const filePath of matches) {
       const srcPath = path.resolve(filePath);
       await builder.compilePlugin(srcPath);
     }
   }
 
-  public async build(configPath: string, watch: boolean): Promise<void> {
+  public async build(
+    configPath: string,
+    options: {
+      watch: boolean;
+      ignoreErrors: boolean;
+    }
+  ): Promise<void> {
     const builder = await this.createBuilder(configPath);
 
-    await builder.build();
+    await builder.build({ ignoreErrors: options.ignoreErrors });
 
-    if (watch) {
+    if (options.watch) {
       await builder.watch();
     }
   }

@@ -10,15 +10,26 @@ import { IProjectConfig } from '../types';
 import { ASSETS_PATH_PATTERN, INCLUDE_PATH_PATTERN, SCRIPTS_PATH_PATTERN } from './constants';
 import logger from '../logger/logger';
 
+export interface BuildOptions {
+  ignoreErrors?: boolean;
+}
+
 export default class AmxxBuilder {
   constructor(private config: IProjectConfig) {}
 
-  async build(): Promise<void> {
+  async build(options: BuildOptions): Promise<void> {
     logger.info('Building...');
+
     await this.buildAssets();
     await this.buildInclude();
-    await this.buildSrc();
+
+    const success = await this.buildSrc(options);
+
+    if (success) {
     logger.success('Build finished!');
+    } else {
+      logger.error('Build finished with errors!');
+    }
   }
 
   async watch(): Promise<void> {
@@ -27,12 +38,26 @@ export default class AmxxBuilder {
     await this.watchSrc();
   }
 
-  async buildSrc(): Promise<void> {
+  async buildSrc(options: BuildOptions): Promise<boolean> {
+    let success = true;
+
     await this.buildDir(
       this.config.input.scripts,
       SCRIPTS_PATH_PATTERN,
-      (filePath: string) => this.updatePlugin(filePath)
+      async (filePath: string) => {
+        try {
+          await this.updatePlugin(filePath);
+        } catch (err) {
+          if (!options.ignoreErrors) {
+            throw err;
+          }
+
+          success = false;
+        }
+      }
     );
+
+    return success;
   }
 
   async buildInclude(): Promise<void> {

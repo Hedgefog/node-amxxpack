@@ -46,9 +46,10 @@ program
   .alias('b')
   .option('--config, -c <path>', 'Config file', config.projectConfig)
   .option('--watch, -w', 'Watch project')
+  .option('--ignore, -i', 'Ignore build errors')
   .action(async (_argument: string, options: any) => {
-    const { C: configPath, W: watch } = options.opts();
-    await controller.build(configPath, watch);
+    const { C: configPath, W: watch, I: ignoreErrors } = options.opts();
+    await controller.build(configPath, { watch, ignoreErrors });
   });
 
 program
