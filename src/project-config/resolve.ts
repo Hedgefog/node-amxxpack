@@ -1,4 +1,4 @@
-import { map, merge } from 'lodash';
+import { castArray, map, merge } from 'lodash';
 import path from 'path';
 import fs from 'fs';
 
@@ -21,9 +21,9 @@ async function resolve(_configPath: string): Promise<IProjectConfig> {
   // resolve paths
   merge(config, {
     input: {
-      scripts: path.resolve(config.input.scripts),
-      include: path.resolve(config.input.include),
-      assets: path.resolve(config.input.assets),
+      scripts: map(castArray(config.input.scripts), (dir) => path.resolve(dir)),
+      include: map(castArray(config.input.include), (dir) => path.resolve(dir)),
+      assets: map(castArray(config.input.assets), (dir) => path.resolve(dir)),
     },
     output: {
       scripts: path.resolve(config.output.scripts),

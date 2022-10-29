@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import { exec } from 'child_process';
 import mkdirp from 'mkdirp';
-import { get, merge } from 'lodash';
+import { castArray, get, map, merge } from 'lodash';
 
 import ProjectConfig from '../../project-config';
 import { IProjectOptions } from '../types';
@@ -119,9 +119,27 @@ class ProjectCreator {
 
   public async createDirectories() {
     logger.info('📁 Creating project directories...');
-    await mkdirp(path.join(this.projectDir, this.projectConfig.input.assets));
-    await mkdirp(path.join(this.projectDir, this.projectConfig.input.include));
-    await mkdirp(path.join(this.projectDir, this.projectConfig.input.scripts));
+
+    await Promise.all(
+      map(
+        castArray(this.projectConfig.input.assets),
+        (dir) => mkdirp(path.join(this.projectDir, dir))
+      )
+    );
+
+    await Promise.all(
+      map(
+        castArray(this.projectConfig.input.include),
+        (dir) => mkdirp(path.join(this.projectDir, dir))
+      )
+    );
+
+    await Promise.all(
+      map(
+        castArray(this.projectConfig.input.scripts),
+        (dir) => mkdirp(path.join(this.projectDir, dir))
+      )
+    );
   }
 
   public async installDependencies() {

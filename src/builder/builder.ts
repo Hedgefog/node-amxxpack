@@ -1,14 +1,16 @@
 import path from 'path';
 import fs from 'fs';
 import mkdirp from 'mkdirp';
-import glob from 'glob-promise';
+import globule from 'globule';
 import chokidar from 'chokidar';
 import normalizePath from 'normalize-path';
+import { castArray, map } from 'lodash';
 
 import amxxpc, { AMXPCMessageType } from './amxxpc';
 import { IProjectConfig } from '../types';
 import { ASSETS_PATH_PATTERN, INCLUDE_PATH_PATTERN, SCRIPTS_PATH_PATTERN } from './constants';
 import logger from '../logger/logger';
+import findRelativePath from '../utils/find-relative-path';
 
 export interface BuildOptions {
   ignoreErrors?: boolean;
@@ -128,7 +130,12 @@ export default class AmxxBuilder {
 
   async updateAsset(filePath: string): Promise<void> {
     const srcPath = path.resolve(filePath);
-    const relativePath = path.relative(this.config.input.assets, filePath);
+
+    const relativePath = findRelativePath(castArray(this.config.input.assets), filePath);
+    if (!relativePath) {
+      throw new Error(`Cannot find relative path for asset "${filePath}"`);
+    }
+
     const destPath = path.join(this.config.output.assets, relativePath);
 
     await mkdirp(path.parse(destPath).dir);
@@ -146,8 +153,8 @@ export default class AmxxBuilder {
   }
 
   async findPlugins(pattern: string): Promise<string[]> {
-    const pathPattern = path.join(this.config.input.scripts, '**', pattern);
-    const matches = await glob(pathPattern);
+    const pathPattern = map(castArray(this.config.input.scripts), (dir) => path.join(dir, '**', pattern));
+    const matches = await globule.find(pathPattern);
 
     return matches.filter((filePath) => path.extname(filePath) === '.sma');
   }
@@ -158,7 +165,13 @@ export default class AmxxBuilder {
     let destDir = path.resolve(this.config.output.plugins);
     if (!this.config.rules.flatCompilation) {
       const srcDir = path.parse(srcPath).dir;
-      destDir = path.join(destDir, path.relative(this.config.input.scripts, srcDir));
+
+      const relativePath = findRelativePath(castArray(this.config.input.scripts), srcDir);
+      if (!relativePath) {
+        throw new Error(`Cannot find relative path for plugin "${filePath}"`);
+      }
+
+      destDir = path.join(destDir, relativePath);
     }
 
     const relateiveSrcPath = path.relative(process.cwd(), srcPath);
@@ -173,7 +186,7 @@ export default class AmxxBuilder {
       includeDir: [
         path.join(this.config.compiler.dir, 'include'),
         ...this.config.include,
-        this.config.input.include,
+        ...castArray(this.config.input.include),
       ]
     });
 
@@ -201,12 +214,12 @@ export default class AmxxBuilder {
   }
 
   private async buildDir(
-    baseDir: string,
+    baseDir: string | string[],
     pattern: string,
     cb: (filePath: string) => any
   ): Promise<void> {
-    const pathPattern = path.join(baseDir, pattern);
-    const matches = await glob(pathPattern, { nodir: true });
+    const pathPattern = map(castArray(baseDir), (dir) => path.join(dir, pattern));
+    const matches = await globule.find(pathPattern, { nodir: true });
     await matches.reduce(
       (acc, match) => acc.then(() => cb(match)),
       Promise.resolve()
@@ -214,11 +227,11 @@ export default class AmxxBuilder {
   }
 
   private async watchDir(
-    baseDir: string,
+    baseDir: string | string[],
     pattern: string,
     cb: (filePath: string) => any
   ): Promise<void> {
-    const pathPattern = path.join(baseDir, pattern);
+    const pathPattern = map(castArray(baseDir), (dir) => path.join(dir, pattern));
     const watcher = chokidar.watch(pathPattern, { ignoreInitial: true, interval: 300 });
 
     const updateFn = (filePath: string) => cb(filePath).catch(

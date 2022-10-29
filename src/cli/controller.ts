@@ -8,6 +8,7 @@ import TemplateBuilder from './services/template-builder';
 import ProjectConfig from '../project-config';
 import { IProjectOptions } from './types';
 import logger from '../logger/logger';
+import { first, isArray } from 'lodash';
 
 class Controller {
   public async createBuilder(configPath: string): Promise<AmxxBuilder> {
@@ -95,10 +96,15 @@ class Controller {
       INCLUDE_NAME: includeName
     }, { PLUGIN_NAME: fileName });
 
+    const resolveFilePath = (dir: string | string[], name: string, ext: string) => {
+      const resolvedDir = isArray(dir) ? first(dir) : dir;
+      return path.join(resolvedDir, `${name}.${ext}`);
+    };
+
     switch (type) {
       case 'script': {
         await templateBuilder.createFileFromTemplate(
-          path.join(projectConfig.input.scripts, `${fileName}.sma`),
+          resolveFilePath(projectConfig.input.scripts, fileName, 'sma'),
           'script',
           options.overwrite
         );
@@ -107,7 +113,7 @@ class Controller {
       }
       case 'include': {
         await templateBuilder.createFileFromTemplate(
-          path.join(projectConfig.input.include, `${fileName}.inc`),
+          resolveFilePath(projectConfig.input.include, fileName, 'inc'),
           'include',
           options.overwrite
         );
@@ -116,13 +122,13 @@ class Controller {
       }
       case 'lib': {
         await templateBuilder.createFileFromTemplate(
-          path.join(projectConfig.input.scripts, `${fileName}.sma`),
+          resolveFilePath(projectConfig.input.scripts, fileName, 'sma'),
           'library-script',
           options.overwrite
         );
 
         await templateBuilder.createFileFromTemplate(
-          path.join(projectConfig.input.include, `${includeName}.inc`),
+          resolveFilePath(projectConfig.input.include, includeName, 'inc'),
           'library-include',
           options.overwrite
         );

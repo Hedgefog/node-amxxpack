@@ -1,8 +1,8 @@
 export interface IProjectConfig {
   input: {
-    scripts: string;
-    include: string;
-    assets: string;
+    scripts: string | string[];
+    include: string | string[];
+    assets: string | string[];
   };
   output: {
     scripts: string;
