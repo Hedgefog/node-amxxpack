@@ -1,7 +1,7 @@
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
-import { map } from 'lodash';
+import { castArray, map } from 'lodash';
 import mkdirp from 'mkdirp';
 
 import ProjectCreator from '../../src/cli/services/project-creator';
@@ -72,9 +72,19 @@ describe('', () => {
     const { projectConfig } = projectCreator;
 
     expect(fs.existsSync(path.join(PROJECT_PATH, config.projectConfig))).toBe(true);
-    expect(fs.existsSync(path.join(PROJECT_PATH, projectConfig.input.assets))).toBe(true);
-    expect(fs.existsSync(path.join(PROJECT_PATH, projectConfig.input.include))).toBe(true);
-    expect(fs.existsSync(path.join(PROJECT_PATH, projectConfig.input.scripts))).toBe(true);
+
+    for (const dir of castArray(projectConfig.input.assets)) {
+      expect(fs.existsSync(path.join(PROJECT_PATH, dir))).toBe(true);
+    }
+
+    for (const dir of castArray(projectConfig.input.include)) {
+      expect(fs.existsSync(path.join(PROJECT_PATH, dir))).toBe(true);
+    }
+
+    for (const dir of castArray(projectConfig.input.scripts)) {
+      expect(fs.existsSync(path.join(PROJECT_PATH, dir))).toBe(true);
+    }
+
     expect(fs.existsSync(path.join(PROJECT_PATH, 'package.json'))).toBe(true);
   });
 
