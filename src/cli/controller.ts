@@ -45,14 +45,16 @@ class Controller {
     options: {
       watch: boolean;
       ignoreErrors: boolean;
+      noCache: boolean;
     }
   ): Promise<void> {
     const builder = await this.createBuilder(configPath);
+    const compileOptions = { ignoreErrors: options.ignoreErrors, noCache: options.noCache };
 
-    await builder.build({ ignoreErrors: options.ignoreErrors });
+    await builder.build(compileOptions);
 
     if (options.watch) {
-      await builder.watch();
+      await builder.watch(compileOptions);
     }
   }
 

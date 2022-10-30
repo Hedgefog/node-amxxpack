@@ -45,6 +45,7 @@
     "globule": "^1.3.4",
     "lodash": "^4.17.21",
     "mkdirp": "^1.0.4",
+    "node-cache": "^5.1.2",
     "normalize-path": "^3.0.0"
   },
   "devDependencies": {
