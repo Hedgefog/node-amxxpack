@@ -120,26 +120,15 @@ class ProjectCreator {
   public async createDirectories() {
     logger.info('📁 Creating project directories...');
 
-    await Promise.all(
-      map(
-        castArray(this.projectConfig.input.assets),
-        (dir) => mkdirp(path.join(this.projectDir, dir))
-      )
-    );
+    const dirs = [
+      ...castArray(this.projectConfig.input.assets),
+      ...castArray(this.projectConfig.input.include),
+      ...castArray(this.projectConfig.input.scripts)
+    ];
 
-    await Promise.all(
-      map(
-        castArray(this.projectConfig.input.include),
-        (dir) => mkdirp(path.join(this.projectDir, dir))
-      )
-    );
-
-    await Promise.all(
-      map(
-        castArray(this.projectConfig.input.scripts),
-        (dir) => mkdirp(path.join(this.projectDir, dir))
-      )
-    );
+    for (const dir of dirs) {
+      await mkdirp(path.join(this.projectDir, dir));
+    }
   }
 
   public async installDependencies() {
