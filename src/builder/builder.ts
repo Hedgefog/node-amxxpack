@@ -1,8 +1,6 @@
-import fs from 'fs';
 import path from 'path';
 import mkdirp from 'mkdirp';
 import globule from 'globule';
-import chokidar from 'chokidar';
 import normalizePath from 'normalize-path';
 import { castArray, map } from 'lodash';
 
@@ -13,6 +11,7 @@ import logger from '../logger/logger';
 import findRelativePath from '../utils/find-relative-path';
 import PluginsCache from './plugins-cache';
 import config from '../config';
+import setupWatch from '../utils/setup-watch';
 
 export interface CompileOptions {
   ignoreErrors?: boolean;
@@ -271,7 +270,7 @@ export default class AmxxBuilder {
     cb: (filePath: string) => any
   ): Promise<void> {
     const pathPattern = map(castArray(baseDir), (dir) => path.join(dir, pattern));
-    const watcher = chokidar.watch(pathPattern, { ignoreInitial: true, interval: 300 });
+    const watcher = setupWatch(pathPattern);
 
     const updateFn = (filePath: string) => cb(filePath).catch(
       (err: Error) => logger.error(err.message)

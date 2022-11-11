@@ -51,11 +51,11 @@ class Controller {
     const builder = await this.createBuilder(configPath);
     const compileOptions = { ignoreErrors: options.ignoreErrors, noCache: options.noCache };
 
-    await builder.build(compileOptions);
-
     if (options.watch) {
       await builder.watch(compileOptions);
     }
+
+    await builder.build(compileOptions);
   }
 
   public async install(configPath: string): Promise<void> {
