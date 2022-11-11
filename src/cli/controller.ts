@@ -1,4 +1,5 @@
 import path from 'path';
+import { first, isArray } from 'lodash';
 
 import AmxxBuilder from '../builder';
 import downloadCompiler from '../downloaders/compiler';
@@ -8,7 +9,6 @@ import TemplateBuilder from './services/template-builder';
 import ProjectConfig from '../project-config';
 import { IProjectOptions } from './types';
 import logger from '../logger/logger';
-import { first, isArray } from 'lodash';
 
 class Controller {
   public async createBuilder(configPath: string): Promise<AmxxBuilder> {
