@@ -28,15 +28,20 @@ export default class AmxxBuilder {
   async build(compileOptions: CompileOptions): Promise<void> {
     logger.info('Building...');
 
-    await this.buildAssets();
-    await this.buildInclude();
+    try {
+      await this.buildAssets();
+      await this.buildInclude();
 
-    const success = await this.buildScripts(compileOptions);
+      const success = await this.buildScripts(compileOptions);
 
-    if (success) {
-      logger.success('Build finished!');
-    } else {
-      logger.error('Build finished with errors!');
+      if (success) {
+        logger.success('Build finished!');
+      } else {
+        logger.error('Build finished with errors!');
+      }
+    } catch (err: any) {
+      logger.error('Build failed! Error:', err.message);
+      process.exit(1);
     }
   }
 
