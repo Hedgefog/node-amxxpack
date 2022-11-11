@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/dot-notation */
 import path from 'path';
 import os from 'os';
-import fs from 'fs/promises';
+import fs from 'fs';
 import NodeCache from 'node-cache';
 
 import PluginsCache from '../../src/builder/plugins-cache';
@@ -15,8 +15,8 @@ describe('Plugins Cache', () => {
     const srcPath = path.join(TEST_TMP_DIR, 'test.sma');
     const pluginPath = path.join(TEST_TMP_DIR, 'test.amxx');
 
-    await fs.writeFile(srcPath, 'src-content');
-    await fs.writeFile(pluginPath, 'compiled-content');
+    await fs.promises.writeFile(srcPath, 'src-content');
+    await fs.promises.writeFile(pluginPath, 'compiled-content');
 
     await pluginCache.updatePlugin(srcPath, pluginPath);
 
@@ -31,12 +31,12 @@ describe('Plugins Cache', () => {
     const srcPath = path.join(TEST_TMP_DIR, 'test.sma');
     const pluginPath = path.join(TEST_TMP_DIR, 'test.amxx');
 
-    await fs.writeFile(srcPath, 'src-content');
-    await fs.writeFile(pluginPath, 'compiled-content');
+    await fs.promises.writeFile(srcPath, 'src-content');
+    await fs.promises.writeFile(pluginPath, 'compiled-content');
 
     await pluginCache.updatePlugin(srcPath, pluginPath);
 
-    await fs.writeFile(pluginPath, 'compiled-content-changed');
+    await fs.promises.writeFile(pluginPath, 'compiled-content-changed');
 
     const isUpdated = await pluginCache.isPluginUpdated(srcPath, pluginPath);
 
@@ -49,12 +49,12 @@ describe('Plugins Cache', () => {
     const srcPath = path.join(TEST_TMP_DIR, 'test.sma');
     const pluginPath = path.join(TEST_TMP_DIR, 'test.amxx');
 
-    await fs.writeFile(srcPath, 'src-content');
-    await fs.writeFile(pluginPath, 'compiled-content');
+    await fs.promises.writeFile(srcPath, 'src-content');
+    await fs.promises.writeFile(pluginPath, 'compiled-content');
 
     await pluginCache.updatePlugin(srcPath, pluginPath);
 
-    await fs.writeFile(srcPath, 'src-content-changed');
+    await fs.promises.writeFile(srcPath, 'src-content-changed');
 
     const isUpdated = await pluginCache.isPluginUpdated(srcPath, pluginPath);
 
@@ -67,8 +67,8 @@ describe('Plugins Cache', () => {
     const srcPath = path.join(TEST_TMP_DIR, 'test.sma');
     const pluginPath = path.join(TEST_TMP_DIR, 'test.amxx');
 
-    await fs.writeFile(srcPath, 'src-content');
-    await fs.writeFile(pluginPath, 'compiled-content');
+    await fs.promises.writeFile(srcPath, 'src-content');
+    await fs.promises.writeFile(pluginPath, 'compiled-content');
 
     await pluginCache.updatePlugin(srcPath, pluginPath);
 
@@ -89,7 +89,7 @@ describe('Plugins Cache', () => {
     const nodeCache = new NodeCache();
     nodeCache.set(pluginCache['getFileCacheKey'](srcPath, 'src'), 'src-hash');
     nodeCache.set(pluginCache['getFileCacheKey'](pluginPath, 'compiled'), 'plugin-hash');
-    await fs.writeFile(cacheFilePath, JSON.stringify(nodeCache.data));
+    await fs.promises.writeFile(cacheFilePath, JSON.stringify(nodeCache.data));
 
     pluginCache.load(cacheFilePath);
     expect(pluginCache['cache'].data).toMatchObject(nodeCache.data);
@@ -105,12 +105,12 @@ describe('Plugins Cache', () => {
     const nodeCache = new NodeCache();
     nodeCache.set(pluginCache['getFileCacheKey'](srcPath, 'src'), 'src-hash');
     nodeCache.set(pluginCache['getFileCacheKey'](pluginPath, 'compiled'), 'plugin-hash');
-    await fs.writeFile(cacheFilePath, JSON.stringify(nodeCache.data));
+    await fs.promises.writeFile(cacheFilePath, JSON.stringify(nodeCache.data));
 
     pluginCache['cache'].data = nodeCache.data;
     pluginCache.save(cacheFilePath);
 
-    const cacheFileContent = await fs.readFile(cacheFilePath, 'utf8');
+    const cacheFileContent = await fs.promises.readFile(cacheFilePath, 'utf8');
     const cacheData = JSON.parse(cacheFileContent);
 
     expect(cacheData).toMatchObject(nodeCache.data);
