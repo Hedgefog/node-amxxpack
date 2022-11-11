@@ -36,9 +36,10 @@ program
   .alias('c')
   .argument('<path>', 'Script path or glob')
   .option('--config, -c <path>', 'Config file', config.projectConfig)
+  .option('--no-cache', 'Don\'t use cache')
   .action(async (filePath: string, options: any) => {
-    const { C: configPath } = options;
-    await controller.compile(filePath, configPath);
+    const { C: configPath, cache } = options;
+    await controller.compile(filePath, configPath, { noCache: !cache });
   });
 
 program

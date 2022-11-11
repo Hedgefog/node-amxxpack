@@ -29,14 +29,19 @@ class Controller {
     await projectCreator.createConfig();
   }
 
-  public async compile(scriptPath: string, configPath: string): Promise<void> {
+  public async compile(
+    scriptPath: string,
+    configPath: string,
+    options: { noCache: boolean }
+  ): Promise<void> {
+    const compileOptions = { noCache: options.noCache };
     const builder = await this.createBuilder(configPath);
-
     const matches = await builder.findPlugins(scriptPath);
 
     for (const filePath of matches) {
-      const srcPath = path.resolve(filePath);
-      await builder.compilePlugin(srcPath);
+      const absFilePath = path.resolve(filePath);
+      const { dir: srcDir, base: srcFile } = path.parse(absFilePath);
+      await builder.compilePlugin(srcDir, srcFile, compileOptions);
     }
   }
 
