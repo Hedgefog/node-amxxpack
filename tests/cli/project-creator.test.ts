@@ -33,7 +33,7 @@ async function initProjectDir(files: any) {
   );
 }
 
-describe('', () => {
+describe('Project Creator', () => {
   beforeAll(() => {
     jest.spyOn(ProjectCreator.prototype, 'createConfig');
     jest.spyOn(ProjectCreator.prototype, 'createDirectories');
