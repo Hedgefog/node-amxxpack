@@ -2,6 +2,11 @@ import fs from 'fs';
 import crypto from 'crypto';
 import NodeCache from 'node-cache';
 
+enum CacheValueType {
+  Source = 'src',
+  Compiled = 'compiled',
+}
+
 export default class PluginsCache {
   private cache: NodeCache;
 
@@ -23,7 +28,7 @@ export default class PluginsCache {
   }
 
   public async isPluginUpdated(srcPath: string, pluginPath: string): Promise<boolean> {
-    const srcCachedHash = this.cache.get(this.getFileCacheKey(srcPath, 'src'));
+    const srcCachedHash = this.cache.get(this.getFileCacheKey(srcPath, CacheValueType.Source));
     if (!srcCachedHash) {
       return false;
     }
@@ -38,7 +43,7 @@ export default class PluginsCache {
       return false;
     }
 
-    const pluginCachedHash = this.cache.get(this.getFileCacheKey(srcPath, 'compiled'));
+    const pluginCachedHash = this.cache.get(this.getFileCacheKey(srcPath, CacheValueType.Compiled));
     if (pluginHash !== pluginCachedHash) {
       return false;
     }
@@ -48,18 +53,18 @@ export default class PluginsCache {
 
   public async updatePlugin(srcPath: string, pluginPath: string): Promise<void> {
     const srcHash = await this.createFileHash(srcPath);
-    this.cache.set(this.getFileCacheKey(srcPath, 'src'), srcHash);
+    this.cache.set(this.getFileCacheKey(srcPath, CacheValueType.Source), srcHash);
 
     const pluginHash = await this.createFileHash(pluginPath);
-    this.cache.set(this.getFileCacheKey(srcPath, 'compiled'), pluginHash);
+    this.cache.set(this.getFileCacheKey(srcPath, CacheValueType.Compiled), pluginHash);
   }
 
   public async deletePlugin(srcPath: string): Promise<void> {
-    this.cache.del(this.getFileCacheKey(srcPath, 'src'));
-    this.cache.del(this.getFileCacheKey(srcPath, 'compiled'));
+    this.cache.del(this.getFileCacheKey(srcPath, CacheValueType.Source));
+    this.cache.del(this.getFileCacheKey(srcPath, CacheValueType.Compiled));
   }
 
-  private getFileCacheKey(filePath: string, type: 'src' | 'compiled') {
+  private getFileCacheKey(filePath: string, type: CacheValueType) {
     return `${filePath}?${type}`;
   }
 
