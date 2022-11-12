@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import config from '../config';
 
+import config from '../config';
 import controller from './controller';
 
 const program = new Command();
@@ -10,6 +10,8 @@ const program = new Command();
 program
   .name('AMXXPack CLI')
   .description('Simple AmxModX CLI');
+
+program.version(require('../../package.json').version);
 
 program
   .command('create')
@@ -36,9 +38,10 @@ program
   .alias('c')
   .argument('<path>', 'Script path or glob')
   .option('--config, -c <path>', 'Config file', config.projectConfig)
+  .option('--no-cache', 'Disable caching')
   .action(async (filePath: string, options: any) => {
-    const { C: configPath } = options;
-    await controller.compile(filePath, configPath);
+    const { C: configPath, cache } = options;
+    await controller.compile(filePath, configPath, { noCache: !cache });
   });
 
 program
@@ -46,9 +49,11 @@ program
   .alias('b')
   .option('--config, -c <path>', 'Config file', config.projectConfig)
   .option('--watch, -w', 'Watch project')
+  .option('--ignore, -i', 'Ignore build errors')
+  .option('--no-cache', 'Disable caching')
   .action(async (_argument: string, options: any) => {
-    const { C: configPath, W: watch } = options.opts();
-    await controller.build(configPath, watch);
+    const { C: configPath, W: watch, I: ignoreErrors, cache } = options.opts();
+    await controller.build(configPath, { watch, ignoreErrors, noCache: !cache });
   });
 
 program

@@ -1,4 +1,5 @@
 import path from 'path';
+import { first, isArray } from 'lodash';
 
 import AmxxBuilder from '../builder';
 import downloadCompiler from '../downloaders/compiler';
@@ -28,25 +29,38 @@ class Controller {
     await projectCreator.createConfig();
   }
 
-  public async compile(scriptPath: string, configPath: string): Promise<void> {
+  public async compile(
+    scriptPath: string,
+    configPath: string,
+    options: { noCache: boolean }
+  ): Promise<void> {
+    const compileOptions = { noCache: options.noCache };
     const builder = await this.createBuilder(configPath);
-
     const matches = await builder.findPlugins(scriptPath);
 
-    for (const filePath of matches) {  
-      const srcPath = path.resolve(filePath);
-      await builder.compilePlugin(srcPath);
+    for (const filePath of matches) {
+      const absFilePath = path.resolve(filePath);
+      const { dir: srcDir, base: srcFile } = path.parse(absFilePath);
+      await builder.compilePlugin(srcDir, srcFile, compileOptions);
     }
   }
 
-  public async build(configPath: string, watch: boolean): Promise<void> {
-    const builder = await this.createBuilder(configPath);
-
-    await builder.build();
-
-    if (watch) {
-      await builder.watch();
+  public async build(
+    configPath: string,
+    options: {
+      watch: boolean;
+      ignoreErrors: boolean;
+      noCache: boolean;
     }
+  ): Promise<void> {
+    const builder = await this.createBuilder(configPath);
+    const compileOptions = { ignoreErrors: options.ignoreErrors, noCache: options.noCache };
+
+    if (options.watch) {
+      await builder.watch(compileOptions);
+    }
+
+    await builder.build(compileOptions);
   }
 
   public async install(configPath: string): Promise<void> {
@@ -89,10 +103,15 @@ class Controller {
       INCLUDE_NAME: includeName
     }, { PLUGIN_NAME: fileName });
 
+    const resolveFilePath = (dir: string | string[], name: string, ext: string) => {
+      const resolvedDir = isArray(dir) ? first(dir) : dir;
+      return path.join(resolvedDir, `${name}.${ext}`);
+    };
+
     switch (type) {
       case 'script': {
         await templateBuilder.createFileFromTemplate(
-          path.join(projectConfig.input.scripts, `${fileName}.sma`),
+          resolveFilePath(projectConfig.input.scripts, fileName, 'sma'),
           'script',
           options.overwrite
         );
@@ -101,7 +120,7 @@ class Controller {
       }
       case 'include': {
         await templateBuilder.createFileFromTemplate(
-          path.join(projectConfig.input.include, `${fileName}.inc`),
+          resolveFilePath(projectConfig.input.include, fileName, 'inc'),
           'include',
           options.overwrite
         );
@@ -110,13 +129,13 @@ class Controller {
       }
       case 'lib': {
         await templateBuilder.createFileFromTemplate(
-          path.join(projectConfig.input.scripts, `${fileName}.sma`),
+          resolveFilePath(projectConfig.input.scripts, fileName, 'sma'),
           'library-script',
           options.overwrite
         );
 
         await templateBuilder.createFileFromTemplate(
-          path.join(projectConfig.input.include, `${includeName}.inc`),
+          resolveFilePath(projectConfig.input.include, includeName, 'inc'),
           'library-include',
           options.overwrite
         );

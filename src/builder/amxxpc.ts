@@ -118,10 +118,15 @@ function formatArgs(params: any, outPath: string) {
 
 function compile(params: any): Promise<ICompileResult> {
   const parsedPath = path.parse(params.path);
-  const fileName = `${parsedPath.name}.${PLUGIN_EXT}`;
-  const dest = path.join(params.dest, fileName);
 
-  mkdirp.sync(params.dest);
+  const dest = params.dest.endsWith(`.${PLUGIN_EXT}`)
+    ? params.dest
+    : path.join(params.dest, `${parsedPath.name}.${PLUGIN_EXT}`);
+
+  const parsedDest = path.parse(dest);
+  const fileName = path.parse(dest).base;
+
+  mkdirp.sync(parsedDest.dir);
 
   return new Promise((resolve) => {
     const output = accumulator();

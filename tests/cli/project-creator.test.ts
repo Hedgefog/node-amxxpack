@@ -1,40 +1,20 @@
 import path from 'path';
-import os from 'os';
 import fs from 'fs';
-import { map } from 'lodash';
 import mkdirp from 'mkdirp';
+import rimraf from 'rimraf';
+import { castArray } from 'lodash';
 
 import ProjectCreator from '../../src/cli/services/project-creator';
-import { IProjectOptions } from '../../src/cli/types';
 import config from '../../src/config';
+import createProject from '../helpers/create-project';
+import { TEST_TMP_DIR } from '../constants';
 
-const TEST_TMP_DIR = path.join(os.tmpdir(), 'amxxpack-tests');
-const PROJECT_NAME = 'test-project';
-const PROJECT_PATH = path.join(TEST_TMP_DIR, PROJECT_NAME);
+const TEST_DIR = path.join(TEST_TMP_DIR, 'project-creator');
 
-const defaultProjectOptions: IProjectOptions = {
-  author: '',
-  description: '',
-  version: '0.0.1',
-  name: PROJECT_NAME,
-  git: false,
-  nonpm: false,
-  cwd: TEST_TMP_DIR
-};
+describe('Project Creator', () => {
+  beforeAll(async () => {
+    await mkdirp(TEST_DIR);
 
-async function initProjectDir(files: any) {
-  await mkdirp(PROJECT_PATH);
-
-  await Promise.all(
-    map(files, async (content, file) => {
-      const filePath = path.join(PROJECT_PATH, file);
-      await fs.promises.writeFile(filePath, content);
-    })
-  );
-}
-
-describe('', () => {
-  beforeAll(() => {
     jest.spyOn(ProjectCreator.prototype, 'createConfig');
     jest.spyOn(ProjectCreator.prototype, 'createDirectories');
     jest.spyOn(ProjectCreator.prototype, 'updatePackage');
@@ -54,16 +34,19 @@ describe('', () => {
     );
   });
 
-  beforeEach(async () => {
-    if (fs.existsSync(PROJECT_PATH)) {
-      await fs.promises.rm(PROJECT_PATH, { recursive: true, force: true });
-    }
+  afterAll(() => {
+    rimraf.sync(`${TEST_DIR}/*`);
+  });
 
+  beforeEach(() => {
+    rimraf.sync(`${TEST_DIR}/*`);
     jest.clearAllMocks();
   });
 
   it('should initialize project', async () => {
-    const projectCreator = new ProjectCreator({ ...defaultProjectOptions });
+    const testProject = createProject(TEST_DIR);
+
+    const projectCreator = new ProjectCreator({ ...testProject.projectOptions });
 
     await projectCreator.createProject();
     expect(projectCreator.createDirectories).toBeCalled();
@@ -71,52 +54,66 @@ describe('', () => {
 
     const { projectConfig } = projectCreator;
 
-    expect(fs.existsSync(path.join(PROJECT_PATH, config.projectConfig))).toBe(true);
-    expect(fs.existsSync(path.join(PROJECT_PATH, projectConfig.input.assets))).toBe(true);
-    expect(fs.existsSync(path.join(PROJECT_PATH, projectConfig.input.include))).toBe(true);
-    expect(fs.existsSync(path.join(PROJECT_PATH, projectConfig.input.scripts))).toBe(true);
-    expect(fs.existsSync(path.join(PROJECT_PATH, 'package.json'))).toBe(true);
+    expect(fs.existsSync(path.join(testProject.projectPath, config.projectConfig))).toBe(true);
+
+    for (const dir of castArray(projectConfig.input.assets)) {
+      expect(fs.existsSync(path.join(testProject.projectPath, dir))).toBe(true);
+    }
+
+    for (const dir of castArray(projectConfig.input.include)) {
+      expect(fs.existsSync(path.join(testProject.projectPath, dir))).toBe(true);
+    }
+
+    for (const dir of castArray(projectConfig.input.scripts)) {
+      expect(fs.existsSync(path.join(testProject.projectPath, dir))).toBe(true);
+    }
+
+    expect(fs.existsSync(path.join(testProject.projectPath, 'package.json'))).toBe(true);
   });
 
   it('should merge package', async () => {
-    const projectCreator = new ProjectCreator({ ...defaultProjectOptions, git: true });
+    const testProject = createProject(TEST_DIR);
+    const projectCreator = new ProjectCreator({ ...testProject.projectOptions, git: true });
 
     await projectCreator.createProject();
     expect(projectCreator.initGit).toBeCalled();
-    expect(fs.existsSync(path.join(PROJECT_PATH, '.git'))).toBe(true);
-    expect(fs.existsSync(path.join(PROJECT_PATH, '.gitignore'))).toBe(true);
+    expect(fs.existsSync(path.join(testProject.projectPath, '.git'))).toBe(true);
+    expect(fs.existsSync(path.join(testProject.projectPath, '.gitignore'))).toBe(true);
   });
 
   it('should initialize git on project create', async () => {
-    const projectCreator = new ProjectCreator({ ...defaultProjectOptions, git: true });
+    const testProject = createProject(TEST_DIR);
+    const projectCreator = new ProjectCreator({ ...testProject.projectOptions, git: true });
 
     await projectCreator.createProject();
     expect(projectCreator.initGit).toBeCalled();
-    expect(fs.existsSync(path.join(PROJECT_PATH, '.git'))).toBe(true);
-    expect(fs.existsSync(path.join(PROJECT_PATH, '.gitignore'))).toBe(true);
+    expect(fs.existsSync(path.join(testProject.projectPath, '.git'))).toBe(true);
+    expect(fs.existsSync(path.join(testProject.projectPath, '.gitignore'))).toBe(true);
   });
 
   it('should update git for initialized for project', async () => {
+    const testProject = createProject(TEST_DIR);
+    await testProject.initDir([
+      { fileName: '.git', content: '' },
+      { fileName: 'package.json', content: '{}' },
+    ]);
+
     const projectCreator = new ProjectCreator({
-      ...defaultProjectOptions,
+      ...testProject.projectOptions,
       name: '.',
       git: true,
-      cwd: PROJECT_PATH
-    });
-
-    await initProjectDir({
-      '.git': '',
-      'package.json': '{}'
+      cwd: testProject.projectPath
     });
 
     await projectCreator.createProject();
     expect(projectCreator.initGit).not.toBeCalled();
     expect(projectCreator.updateGitignore).toBeCalled();
-    expect(fs.existsSync(path.join(PROJECT_PATH, '.gitignore'))).toBe(true);
+    expect(fs.existsSync(path.join(testProject.projectPath, '.gitignore'))).toBe(true);
   });
 
   it('should not initialize git on project create', async () => {
-    const projectCreator = new ProjectCreator({ ...defaultProjectOptions });
+    const testProject = createProject(TEST_DIR);
+    const projectCreator = new ProjectCreator({ ...testProject.projectOptions });
 
     await projectCreator.createProject();
     expect(projectCreator.initGit).not.toBeCalled();
@@ -124,7 +121,8 @@ describe('', () => {
   });
 
   it('should not initialize npm package on project create', async () => {
-    const projectCreator = new ProjectCreator({ ...defaultProjectOptions, nonpm: true });
+    const testProject = createProject(TEST_DIR);
+    const projectCreator = new ProjectCreator({ ...testProject.projectOptions, nonpm: true });
 
     await projectCreator.createProject();
     expect(projectCreator.updatePackage).not.toBeCalled();
@@ -132,7 +130,8 @@ describe('', () => {
   });
 
   it('should initialize npm package on project create', async () => {
-    const projectCreator = new ProjectCreator({ ...defaultProjectOptions });
+    const testProject = createProject(TEST_DIR);
+    const projectCreator = new ProjectCreator({ ...testProject.projectOptions });
 
     await projectCreator.createProject();
     expect(projectCreator.updatePackage).toBeCalled();
