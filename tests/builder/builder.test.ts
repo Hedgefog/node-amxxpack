@@ -1,6 +1,6 @@
 import path from 'path';
 import fs from 'fs';
-import { assign, castArray, reduce } from 'lodash';
+import { castArray } from 'lodash';
 
 import ProjectConfig from '../../src/project-config';
 import AmxxBuilder from '../../src/builder/builder';
@@ -9,6 +9,17 @@ import { IProjectConfig } from '../../src/types';
 import { TEST_PROJECTS_DIR } from '../constants';
 
 let amxxpc: jest.Mock;
+
+jest.mock('../../src/builder/amxxpc', () => {
+  const originalModule = jest.requireActual('../../src/builder/amxxpc');
+  amxxpc = jest.requireActual('../mocks/amxxpc').default;
+
+  return {
+    __esModule: true,
+    ...originalModule,
+    default: amxxpc
+  };
+});
 
 function createCompileParams(fileName: string, projectConfig: IProjectConfig) {
   return {
@@ -22,25 +33,6 @@ function createCompileParams(fileName: string, projectConfig: IProjectConfig) {
     ]
   };
 }
-
-function createProjectFilesObj(projectFiles: string[]) {
-  return reduce(
-    projectFiles,
-    (acc, fileName) => assign(acc, { [fileName]: fileName }),
-    {}
-  );
-}
-
-jest.mock('../../src/builder/amxxpc', () => {
-  const originalModule = jest.requireActual('../../src/builder/amxxpc');
-  amxxpc = jest.requireActual('../mocks/amxxpc').default;
-
-  return {
-    __esModule: true,
-    ...originalModule,
-    default: amxxpc
-  };
-});
 
 describe('Builder', () => {
   beforeAll(async () => {
@@ -65,7 +57,7 @@ describe('Builder', () => {
     ];
 
     const project = createProject();
-    await project.initDir(createProjectFilesObj(projectFiles));
+    await project.initDir(projectFiles);
 
     process.chdir(project.projectPath);
 
@@ -97,7 +89,7 @@ describe('Builder', () => {
     ];
 
     const project = createProject();
-    await project.initDir(createProjectFilesObj(projectFiles));
+    await project.initDir(projectFiles);
 
     process.chdir(project.projectPath);
 
@@ -125,7 +117,7 @@ describe('Builder', () => {
     ];
 
     const project = createProject();
-    await project.initDir(createProjectFilesObj(projectFiles));
+    await project.initDir(projectFiles);
 
     process.chdir(project.projectPath);
 
@@ -164,7 +156,7 @@ describe('Builder', () => {
     ];
 
     const project = createProject();
-    await project.initDir(createProjectFilesObj([...projectFiles, ...extraProjectFiles]));
+    await project.initDir([...projectFiles, ...extraProjectFiles]);
 
     process.chdir(project.projectPath);
 

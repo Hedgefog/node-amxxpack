@@ -8,6 +8,11 @@ import { TEST_PROJECTS_DIR } from '../constants';
 
 const chance = new Chance();
 
+export interface IProjectFile {
+  fileName: string;
+  content?: string;
+}
+
 function createProject() {
   const projectName = chance.word({ length: 8 });
   const projectPath = path.join(TEST_PROJECTS_DIR, projectName);
@@ -24,16 +29,19 @@ function createProject() {
       nonpm: false,
       cwd: TEST_PROJECTS_DIR
     },
-    async initDir(files: { [fileName: string]: string } = {}) {
+    async initDir(files: (IProjectFile | string)[]) {
       await mkdirp(projectPath);
 
       await Promise.all(
-        map(files, async (content, file) => {
-          const filePath = path.resolve(projectPath, file);
+        map(files, async (file) => {
+          const fileName = typeof file === 'string' ? file : file.fileName;
+          const content = typeof file === 'string' ? '' : file.content;
+
+          const filePath = path.resolve(projectPath, fileName);
           const { dir: subDir } = path.parse(filePath);
           await mkdirp(subDir);
 
-          await fs.promises.writeFile(filePath, content);
+          await fs.promises.writeFile(filePath, content || '');
         })
       );
     }

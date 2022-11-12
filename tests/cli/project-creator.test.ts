@@ -87,10 +87,10 @@ describe('Project Creator', () => {
 
   it('should update git for initialized for project', async () => {
     const testProject = createProject();
-    await testProject.initDir({
-      '.git': '',
-      'package.json': '{}'
-    });
+    await testProject.initDir([
+      { fileName: '.git', content: '' },
+      { fileName: 'package.json', content: '{}' },
+    ]);
 
     const projectCreator = new ProjectCreator({
       ...testProject.projectOptions,
