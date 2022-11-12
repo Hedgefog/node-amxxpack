@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import config from '../config';
 
+import config from '../config';
 import controller from './controller';
 
 const program = new Command();
@@ -10,6 +10,8 @@ const program = new Command();
 program
   .name('AMXXPack CLI')
   .description('Simple AmxModX CLI');
+
+program.version(require('../../package.json').version);
 
 program
   .command('create')
