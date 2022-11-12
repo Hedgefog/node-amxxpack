@@ -47,8 +47,11 @@ npm install -g amxxpack
 - `amxxpack build` - command to build the project
   - `--watch` - flag to watch changes
   - `--config` - config file
+  - `--ignore` - ignore build errors
+  - `--no-cache` - disable caching
 - `amxxpack compile <path|glob>` - compile specific plugin in the project
   - `--config` - config file
+  - `--no-cache` - disable caching
 - `amxxpack new <script|lib|include> [name]` - create new file in the project workspace
   - `--config` - config file
   - `--name` - plugin name
