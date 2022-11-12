@@ -4,8 +4,6 @@ import mkdirp from 'mkdirp';
 import fs from 'fs';
 import path from 'path';
 
-import { TEST_PROJECTS_DIR } from '../constants';
-
 const chance = new Chance();
 
 export interface IProjectFile {
@@ -13,9 +11,9 @@ export interface IProjectFile {
   content?: string;
 }
 
-function createProject() {
+function createProject(dir: string) {
   const projectName = chance.word({ length: 8 });
-  const projectPath = path.join(TEST_PROJECTS_DIR, projectName);
+  const projectPath = path.join(dir, projectName);
 
   return {
     projectName,
@@ -27,7 +25,7 @@ function createProject() {
       name: projectName,
       git: false,
       nonpm: false,
-      cwd: TEST_PROJECTS_DIR
+      cwd: dir
     },
     async initDir(files: (IProjectFile | string)[]) {
       await mkdirp(projectPath);

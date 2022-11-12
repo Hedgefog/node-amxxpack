@@ -2,7 +2,7 @@ import fs from 'fs';
 import crypto from 'crypto';
 import NodeCache from 'node-cache';
 
-enum CacheValueType {
+export enum CacheValueType {
   Source = 'src',
   Compiled = 'compiled',
 }
@@ -64,7 +64,7 @@ export default class PluginsCache {
     this.cache.del(this.getFileCacheKey(srcPath, CacheValueType.Compiled));
   }
 
-  private getFileCacheKey(filePath: string, type: CacheValueType) {
+  public getFileCacheKey(filePath: string, type: CacheValueType) {
     return `${filePath}?${type}`;
   }
 

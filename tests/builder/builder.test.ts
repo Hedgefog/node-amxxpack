@@ -1,12 +1,15 @@
 import path from 'path';
-import fs from 'fs';
+import rimraf from 'rimraf';
+import mkdirp from 'mkdirp';
 import { castArray } from 'lodash';
 
 import ProjectConfig from '../../src/project-config';
 import AmxxBuilder from '../../src/builder/builder';
 import createProject from '../helpers/create-project';
 import { IProjectConfig } from '../../src/types';
-import { TEST_PROJECTS_DIR } from '../constants';
+import { TEST_TMP_DIR } from '../constants';
+
+const TEST_DIR = path.join(TEST_TMP_DIR, 'builder');
 
 let amxxpc: jest.Mock;
 
@@ -36,12 +39,15 @@ function createCompileParams(fileName: string, projectConfig: IProjectConfig) {
 
 describe('Builder', () => {
   beforeAll(async () => {
-    if (fs.existsSync(TEST_PROJECTS_DIR)) {
-      await fs.promises.rm(TEST_PROJECTS_DIR, { recursive: true, force: true });
-    }
+    await mkdirp(TEST_DIR);
   });
 
-  beforeEach(async () => {
+  afterAll(() => {
+    rimraf.sync(`${TEST_DIR}/*`);
+  });
+
+  beforeEach(() => {
+    rimraf.sync(`${TEST_DIR}/*`);
     jest.clearAllMocks();
   });
 
@@ -56,7 +62,7 @@ describe('Builder', () => {
       path.join(scriptsDir, 'nested/nested/test5.sma'),
     ];
 
-    const project = createProject();
+    const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
 
     process.chdir(project.projectPath);
@@ -88,7 +94,7 @@ describe('Builder', () => {
       path.join(extraScriptsDir, 'nexted/extra2.sma'),
     ];
 
-    const project = createProject();
+    const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
 
     process.chdir(project.projectPath);
@@ -116,7 +122,7 @@ describe('Builder', () => {
       path.join(assetsDir, 'maps/test.bsp')
     ];
 
-    const project = createProject();
+    const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
 
     process.chdir(project.projectPath);
@@ -155,7 +161,7 @@ describe('Builder', () => {
       path.join(extraAssetsDir, 'maps/extra.bsp')
     ];
 
-    const project = createProject();
+    const project = createProject(TEST_DIR);
     await project.initDir([...projectFiles, ...extraProjectFiles]);
 
     process.chdir(project.projectPath);
