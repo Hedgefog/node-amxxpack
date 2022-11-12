@@ -6,14 +6,17 @@ import logger from '../logger/logger';
 import defaults from './defaults';
 import { IProjectConfig } from '../types';
 
-async function resolve(_configPath: string): Promise<IProjectConfig> {
-  const configPath = path.resolve(_configPath);
-
+async function resolve(_configPath?: string): Promise<IProjectConfig> {
   let userConfig: Partial<IProjectConfig> = null;
-  if (fs.existsSync(configPath)) {
-    userConfig = await import(configPath);
-  } else {
-    logger.error('Cannot read config file!');
+
+  if (_configPath) {
+    const configPath = path.resolve(_configPath);
+
+    if (fs.existsSync(configPath)) {
+      userConfig = await import(configPath);
+    } else {
+      logger.error('Cannot read config file!');
+    }
   }
 
   const config: IProjectConfig = merge({}, defaults, userConfig);
