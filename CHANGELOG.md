@@ -1,3 +1,8 @@
+# 1.3.0
+- Added filtering and subdirs for assets
+- Downloader can now download newer compiler version without providing dev flag and build identifier
+- Updated some log messages
+
 # 1.2.0
 - Added caching to skip already compiled plugins
 - Added `--ignore` flag for `build` and `compile` commands to ignore errors during the build process
