@@ -67,7 +67,7 @@ npm install -g amxxpack
 
 ## 🦸 Advanced configuration
 
-### Thir-party dependencies
+### Third-party dependencies
 In case your project requires third-party modules you can specify a link to third-party archives and these archives will be downloaded and extracted to the third-party directory.
 ```json
 {
