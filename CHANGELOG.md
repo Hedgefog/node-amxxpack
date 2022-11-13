@@ -1,6 +1,6 @@
 # 1.3.0
 - Added filtering and subdirs for assets
-- Downloader can now download newer compiler version without providing dev flag and build identifier
+- Downloader can now download a newer compiler version without specifying dev flag and build identifier
 - Updated some log messages
 
 # 1.2.0
