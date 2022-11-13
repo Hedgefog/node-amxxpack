@@ -2,7 +2,6 @@ import path from 'path';
 import fs from 'fs';
 import mkdirp from 'mkdirp';
 import rimraf from 'rimraf';
-import { castArray } from 'lodash';
 
 import ProjectCreator from '../../src/cli/services/project-creator';
 import config from '../../src/config';
@@ -56,16 +55,16 @@ describe('Project Creator', () => {
 
     expect(fs.existsSync(path.join(testProject.projectPath, config.projectConfig))).toBe(true);
 
-    for (const dir of castArray(projectConfig.input.assets)) {
-      expect(fs.existsSync(path.join(testProject.projectPath, dir))).toBe(true);
+    for (const assetInput of projectConfig.input.assets) {
+      expect(fs.existsSync(assetInput.dir)).toBe(true);
     }
 
-    for (const dir of castArray(projectConfig.input.include)) {
-      expect(fs.existsSync(path.join(testProject.projectPath, dir))).toBe(true);
+    for (const dir of projectConfig.input.include) {
+      expect(fs.existsSync(dir)).toBe(true);
     }
 
-    for (const dir of castArray(projectConfig.input.scripts)) {
-      expect(fs.existsSync(path.join(testProject.projectPath, dir))).toBe(true);
+    for (const dir of projectConfig.input.scripts) {
+      expect(fs.existsSync(dir)).toBe(true);
     }
 
     expect(fs.existsSync(path.join(testProject.projectPath, 'package.json'))).toBe(true);

@@ -5,7 +5,7 @@ import normalizePath from 'normalize-path';
 import { castArray, map } from 'lodash';
 
 import amxxpc, { AMXPCMessageType } from './amxxpc';
-import { IProjectConfig } from '../types';
+import { IAssetInput, IResolvedProjectConfig } from '../types';
 import { ASSETS_PATH_PATTERN, INCLUDE_PATH_PATTERN, SCRIPTS_PATH_PATTERN } from './constants';
 import logger from '../logger/logger';
 import PluginsCache from './plugins-cache';
@@ -21,7 +21,7 @@ export interface CompileOptions {
 export default class AmxxBuilder {
   private pluginCache: PluginsCache;
 
-  constructor(private projectConfig: IProjectConfig) {
+  constructor(private projectConfig: IResolvedProjectConfig) {
     this.initPluginCache();
   }
 
@@ -35,9 +35,9 @@ export default class AmxxBuilder {
       const success = await this.buildScripts(compileOptions);
 
       if (success) {
-        logger.success('Build finished!');
+        logger.success('Build completed successfully!');
       } else {
-        logger.error('Build finished with errors!');
+        logger.error('Build completed with errors!');
       }
     } catch (err: any) {
       logger.error('Build failed! Error:', err.message);
@@ -52,12 +52,10 @@ export default class AmxxBuilder {
   }
 
   async buildScripts(compileOptions: CompileOptions): Promise<boolean> {
-    const scriptsDirs = castArray(this.projectConfig.input.scripts);
-
     let success = true;
 
     try {
-      for (const scriptsDir of scriptsDirs) {
+      for (const scriptsDir of this.projectConfig.input.scripts) {
         await this.buildDir(
           scriptsDir,
           SCRIPTS_PATH_PATTERN,
@@ -91,24 +89,17 @@ export default class AmxxBuilder {
       return;
     }
 
-    const assetsDirs = castArray(this.projectConfig.input.assets);
-
-    for (const assetsDir of assetsDirs) {
+    for (const assetInput of this.projectConfig.input.assets) {
       await this.buildDir(
-        assetsDir,
+        assetInput.dir,
         ASSETS_PATH_PATTERN,
-        async (filePath: string) => {
-          const assetFile = path.relative(assetsDir, filePath);
-          await this.updateAsset(assetsDir, assetFile);
-        }
+        (filePath: string) => this.updateAsset(filePath, assetInput)
       );
     }
   }
 
   async watchScripts(compileOptions: CompileOptions): Promise<void> {
-    const scriptsDirs = castArray(this.projectConfig.input.scripts);
-
-    for (const scriptsDir of scriptsDirs) {
+    for (const scriptsDir of this.projectConfig.input.scripts) {
       await this.watchDir(
         scriptsDir,
         SCRIPTS_PATH_PATTERN,
@@ -133,16 +124,11 @@ export default class AmxxBuilder {
       return;
     }
 
-    const assetsDirs = castArray(this.projectConfig.input.assets);
-
-    for (const assetsDir of assetsDirs) {
+    for (const assetInput of this.projectConfig.input.assets) {
       await this.watchDir(
-        assetsDir,
+        assetInput.dir,
         ASSETS_PATH_PATTERN,
-        async (filePath: string) => {
-          const assetFile = path.relative(assetsDir, filePath);
-          await this.updateAsset(assetsDir, assetFile);
-        }
+        (filePath: string) => this.updateAsset(filePath, assetInput)
       );
     }
   }
@@ -172,7 +158,7 @@ export default class AmxxBuilder {
       return;
     }
 
-    const srcPath = path.resolve(srcDir, srcFile);
+    const srcPath = path.join(srcDir, srcFile);
     const destPath = path.join(this.projectConfig.output.scripts, path.parse(srcFile).base);
 
     await mkdirp(this.projectConfig.output.scripts);
@@ -180,26 +166,29 @@ export default class AmxxBuilder {
     logger.info('Script updated:', normalizePath(destPath));
   }
 
-  async updateAsset(srcDir: string, srcFile: string): Promise<void> {
-    const srcPath = path.resolve(srcDir, srcFile);
-    const destPath = path.join(this.projectConfig.output.assets, srcFile);
+  async updateAsset(filePath: string, assetInput: IAssetInput): Promise<void> {
+    const srcFile = path.relative(assetInput.dir, filePath);
 
+    if (assetInput.filter && !this.execPathFilter(srcFile, assetInput.filter)) {
+      return;
+    }
+
+    const destPath = path.join(this.projectConfig.output.assets, assetInput.dest || '', srcFile);
     await mkdirp(path.parse(destPath).dir);
-    await copyFile(srcPath, destPath);
-    logger.info('Asset updated', normalizePath(destPath));
+    await copyFile(filePath, destPath);
+    logger.info('Asset updated:', normalizePath(destPath));
   }
 
   async updateInclude(filePath: string): Promise<void> {
-    const srcPath = path.resolve(filePath);
     const destPath = path.join(this.projectConfig.output.include, path.parse(filePath).base);
 
     await mkdirp(this.projectConfig.output.include);
-    await copyFile(srcPath, destPath);
+    await copyFile(filePath, destPath);
     logger.info('Include updated:', normalizePath(destPath));
   }
 
   async findPlugins(pattern: string): Promise<string[]> {
-    const pathPattern = map(castArray(this.projectConfig.input.scripts), (dir) => path.join(dir, '**', pattern));
+    const pathPattern = map(this.projectConfig.input.scripts, (dir) => path.join(dir, '**', pattern));
     const matches = await globule.find(pathPattern);
 
     return matches.filter((filePath) => path.extname(filePath) === '.sma');
@@ -210,10 +199,10 @@ export default class AmxxBuilder {
     srcFile: string,
     compileOptions: CompileOptions = {}
   ): Promise<void> {
-    const srcPath = path.resolve(srcDir, srcFile);
+    const srcPath = path.join(srcDir, srcFile);
     const { name: scriptName, dir: srcNestedDir } = path.parse(srcFile);
 
-    const destDir = path.resolve(
+    const destDir = path.join(
       this.projectConfig.output.plugins,
       this.projectConfig.rules.flatCompilation ? '.' : srcNestedDir
     );
@@ -226,7 +215,7 @@ export default class AmxxBuilder {
     const relateiveSrcPath = path.relative(process.cwd(), srcPath);
 
     if (isUpdated) {
-      logger.info(`Script "${normalizePath(relateiveSrcPath)}" is already up to date. Skipped!`);
+      logger.info('Script is already up to date:', normalizePath(relateiveSrcPath), 'Skipped!');
       return;
     }
 
@@ -244,7 +233,7 @@ export default class AmxxBuilder {
       includeDir: [
         path.join(this.projectConfig.compiler.dir, 'include'),
         ...this.projectConfig.include,
-        ...castArray(this.projectConfig.input.include),
+        ...this.projectConfig.input.include,
       ]
     });
 
@@ -272,7 +261,7 @@ export default class AmxxBuilder {
     if (result.success) {
       const destPath = path.join(destDir, result.plugin);
       const relativeFilePath = path.relative(process.cwd(), srcPath);
-      logger.success('Compilation success:', normalizePath(relativeFilePath));
+      logger.success('Script compiled successfully:', normalizePath(relativeFilePath));
       logger.info('Plugin updated:', normalizePath(destPath));
     } else {
       throw new Error(`Failed to compile ${normalizePath(relateiveSrcPath)} : "${result.error}"`);
@@ -287,7 +276,7 @@ export default class AmxxBuilder {
     const pathPattern = map(castArray(baseDir), (dir) => path.join(dir, pattern));
     const matches = await globule.find(pathPattern, { nodir: true });
     await matches.reduce(
-      (acc, match) => acc.then(() => cb(match)),
+      (acc, match) => acc.then(() => cb(path.normalize(match))),
       Promise.resolve()
     );
   }
@@ -300,7 +289,7 @@ export default class AmxxBuilder {
     const pathPattern = map(castArray(baseDir), (dir) => path.join(dir, pattern));
     const watcher = setupWatch(pathPattern);
 
-    const updateFn = (filePath: string) => cb(filePath).catch(
+    const updateFn = (filePath: string) => cb(path.normalize(filePath)).catch(
       (err: Error) => logger.error(err.message)
     );
 
@@ -311,5 +300,13 @@ export default class AmxxBuilder {
   private initPluginCache() {
     this.pluginCache = new PluginsCache();
     this.pluginCache.load(config.cacheFile);
+  }
+
+  private execPathFilter(filePath: string, filter: string | string[]) {
+    return globule.isMatch(filter, filePath, {
+      dot: true,
+      nocase: true,
+      matchBase: true
+    });
   }
 }

@@ -12,7 +12,7 @@ import logger from '../logger/logger';
 
 class Controller {
   public async createBuilder(configPath: string): Promise<AmxxBuilder> {
-    const projectConfig = await ProjectConfig.resolve(configPath);
+    const projectConfig = await ProjectConfig.load(configPath);
     const builder = new AmxxBuilder(projectConfig);
 
     return builder;
@@ -39,8 +39,7 @@ class Controller {
     const matches = await builder.findPlugins(scriptPath);
 
     for (const filePath of matches) {
-      const absFilePath = path.resolve(filePath);
-      const { dir: srcDir, base: srcFile } = path.parse(absFilePath);
+      const { dir: srcDir, base: srcFile } = path.parse(filePath);
       await builder.compilePlugin(srcDir, srcFile, compileOptions);
     }
   }
@@ -64,7 +63,7 @@ class Controller {
   }
 
   public async install(configPath: string): Promise<void> {
-    const projectConfig = await ProjectConfig.resolve(configPath);
+    const projectConfig = await ProjectConfig.load(configPath);
 
     await downloadCompiler({
       path: projectConfig.compiler.dir,
@@ -90,7 +89,7 @@ class Controller {
     overwrite: boolean;
     include: string[];
   }): Promise<any> {
-    const projectConfig = await ProjectConfig.resolve(configPath);
+    const projectConfig = await ProjectConfig.load(configPath);
     const { base: includeName } = path.parse(fileName);
 
     const templateBuilder = new TemplateBuilder(projectConfig, {

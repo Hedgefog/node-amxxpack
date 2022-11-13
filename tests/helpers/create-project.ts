@@ -35,7 +35,7 @@ function createProject(dir: string) {
           const fileName = typeof file === 'string' ? file : file.fileName;
           const content = typeof file === 'string' ? '' : file.content;
 
-          const filePath = path.resolve(projectPath, fileName);
+          const filePath = path.join(projectPath, fileName);
           const { dir: subDir } = path.parse(filePath);
           await mkdirp(subDir);
 

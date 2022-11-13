@@ -64,3 +64,79 @@ npm install -g amxxpack
 - `amxpack n` - alias to `new` command
 - `amxpack b` - alias to `build` command
 - `amxpack c` - alias to `compile` command
+
+## 🦸 Advanced configuration
+
+### Thir-party dependencies
+In case your project requires third-party modules you can specify a link to third-party archives and these archives will be downloaded and extracted to the third-party directory.
+```json
+{
+  "thirdparty": {
+    "dir": "./.thirdparty",
+    "dependencies": [
+      {
+        "name": "somemodule",
+        "url": "https://website/somemodule-v100.zip"
+      }
+    ]
+  }
+}
+```
+
+configuration above will download `somemodule-v100.zip` archive and extract it to the `./.thirdparty/somemodule` directory then you can use thirparty files in your project. For example add thirparty directory to include list:
+```json
+{
+    "include": [
+      "./.thirdparty/somemodule/include"
+    ]
+}
+```
+
+### Multiple directories as an input
+You can use multiple directories as builder inputs, just specify an array of directories in the project configuration. Example:
+
+```json
+  {
+    "input": {
+      "scripts": ["./src/scripts", "./src/extra-scripts"],
+      "include": ["./src/include", "./src/extra-include"],
+      "assets": ["./assets", "./extra-assets"]
+    }
+  }
+```
+
+### Assets filtering and subdirectories
+Using glob filters you can specify which assets should be copied.
+
+For example, you can exclude all assets except `*.mdl`:
+```json
+  {
+    "input": {
+      "assets": [
+        { "dir": "./assets", "filter": "*.mdl" }
+      ]
+    }
+  }
+```
+
+or exclude `*.tga` and `*.wav` files:
+```json
+  {
+    "input": {
+      "assets": [
+        { "dir": "./assets", "filter": "*.!(tga|wav)" }
+      ]
+    }
+  }
+```
+
+You can also specify subdirectories for copying. With this configuration the builder will copy all files from `./assets/models` to `./models/myproject` of the project build directory.
+```json
+  {
+    "input": {
+      "assets": [
+        { "dir": "./assets/models", "dest": "./models/myproject" }
+      ]
+    }
+  }
+```

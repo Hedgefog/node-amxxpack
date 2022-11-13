@@ -5,6 +5,7 @@ import mkdirp from 'mkdirp';
 
 import { IAddTemplateContext } from '../types';
 import { IProjectConfig } from '../../types';
+import logger from '../../logger/logger';
 
 class TemplateBuilder {
   public context: IAddTemplateContext = null;
@@ -71,6 +72,8 @@ class TemplateBuilder {
       await this.buildTemplate(template, { INCLUDES: rawIncludes }),
       { flag: overwrite ? 'w' : 'wx' }
     );
+
+    logger.info('New file created:', filePath);
   }
 }
 

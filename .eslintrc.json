@@ -27,6 +27,7 @@
         "object-curly-newline": "off",
         "no-await-in-loop": "off",
         "no-restricted-syntax": "off",
-        "semi": "error"
+        "semi": "error",
+        "no-plusplus": "off"
     }
 }

@@ -1,8 +1,14 @@
+export interface IAssetInput {
+  dir: string;
+  dest?: string;
+  filter?: string | string[];
+}
+
 export interface IProjectConfig {
   input: {
     scripts: string | string[];
     include: string | string[];
-    assets: string | string[];
+    assets: string | string[] | IAssetInput | IAssetInput[];
   };
   output: {
     scripts: string;
@@ -39,5 +45,13 @@ export interface IProjectConfig {
         script?: string;
       }
     };
+  };
+}
+
+export interface IResolvedProjectConfig extends IProjectConfig {
+  input: {
+    scripts: string[];
+    include: string[];
+    assets: IAssetInput[];
   };
 }
