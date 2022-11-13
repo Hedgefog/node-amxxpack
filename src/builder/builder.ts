@@ -176,7 +176,7 @@ export default class AmxxBuilder {
     const destPath = path.join(this.projectConfig.output.assets, assetInput.dest || '', srcFile);
     await mkdirp(path.parse(destPath).dir);
     await copyFile(filePath, destPath);
-    logger.info('Asset updated', normalizePath(destPath));
+    logger.info('Asset updated:', normalizePath(destPath));
   }
 
   async updateInclude(filePath: string): Promise<void> {
