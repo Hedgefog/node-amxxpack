@@ -1,6 +1,6 @@
 # 1.2.0
 - Added caching to skip already compiled plugins
-- Added `--ignore` flag for `build` and` compile` commands to ignore errors during the build process
+- Added `--ignore` flag for `build` and `compile` commands to ignore errors during the build process
 - Added ability to specify multiple directories for `scripts`, `includes`, `assets` using an array
 - Added global error handler to avoid displaying stack traces in the console
 - Various fixes for builder and watcher
