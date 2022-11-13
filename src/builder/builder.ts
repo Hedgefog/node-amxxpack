@@ -35,9 +35,9 @@ export default class AmxxBuilder {
       const success = await this.buildScripts(compileOptions);
 
       if (success) {
-        logger.success('Build finished!');
+        logger.success('Build completed successfully!');
       } else {
-        logger.error('Build finished with errors!');
+        logger.error('Build completed with errors!');
       }
     } catch (err: any) {
       logger.error('Build failed! Error:', err.message);
@@ -226,7 +226,7 @@ export default class AmxxBuilder {
     const relateiveSrcPath = path.relative(process.cwd(), srcPath);
 
     if (isUpdated) {
-      logger.info(`Script "${normalizePath(relateiveSrcPath)}" is already up to date. Skipped!`);
+      logger.info('Script is already up to date:', normalizePath(relateiveSrcPath), 'Skipped!');
       return;
     }
 
@@ -272,7 +272,7 @@ export default class AmxxBuilder {
     if (result.success) {
       const destPath = path.join(destDir, result.plugin);
       const relativeFilePath = path.relative(process.cwd(), srcPath);
-      logger.success('Compilation success:', normalizePath(relativeFilePath));
+      logger.success('Script compiled successfully:', normalizePath(relativeFilePath));
       logger.info('Plugin updated:', normalizePath(destPath));
     } else {
       throw new Error(`Failed to compile ${normalizePath(relateiveSrcPath)} : "${result.error}"`);
