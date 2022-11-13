@@ -1,12 +1,13 @@
+import fs from 'fs';
 import path from 'path';
 import rimraf from 'rimraf';
 import mkdirp from 'mkdirp';
-import { castArray } from 'lodash';
+import { some } from 'lodash';
 
 import ProjectConfig from '../../src/project-config';
 import AmxxBuilder from '../../src/builder/builder';
 import createProject from '../helpers/create-project';
-import { IProjectConfig } from '../../src/types';
+import { IResolvedProjectConfig } from '../../src/types';
 import { TEST_TMP_DIR } from '../constants';
 
 const TEST_DIR = path.join(TEST_TMP_DIR, 'builder');
@@ -24,7 +25,7 @@ jest.mock('../../src/builder/amxxpc', () => {
   };
 });
 
-function createCompileParams(fileName: string, projectConfig: IProjectConfig) {
+function createCompileParams(fileName: string, projectConfig: IResolvedProjectConfig) {
   return {
     path: path.resolve(fileName),
     dest: path.resolve(projectConfig.output.plugins, `${path.parse(fileName).name}.amxx`),
@@ -32,7 +33,7 @@ function createCompileParams(fileName: string, projectConfig: IProjectConfig) {
     includeDir: [
       path.resolve(projectConfig.compiler.dir, 'include'),
       ...projectConfig.include,
-      ...castArray(projectConfig.input.include)
+      ...projectConfig.input.include
     ]
   };
 }
@@ -67,8 +68,9 @@ describe('Builder', () => {
 
     process.chdir(project.projectPath);
 
-    const projectConfig = await ProjectConfig.resolve();
-    projectConfig.input.scripts = scriptsDir;
+    const projectConfig = await ProjectConfig.resolve(
+      { input: { scripts: [scriptsDir] } }
+    );
 
     const builder = new AmxxBuilder(projectConfig);
 
@@ -99,8 +101,9 @@ describe('Builder', () => {
 
     process.chdir(project.projectPath);
 
-    const projectConfig = await ProjectConfig.resolve();
-    projectConfig.input.scripts = [scriptsDir, extraScriptsDir];
+    const projectConfig = await ProjectConfig.resolve(
+      { input: { scripts: [scriptsDir, extraScriptsDir] } }
+    );
 
     const builder = new AmxxBuilder(projectConfig);
 
@@ -127,8 +130,9 @@ describe('Builder', () => {
 
     process.chdir(project.projectPath);
 
-    const projectConfig = await ProjectConfig.resolve();
-    projectConfig.input.assets = assetsDir;
+    const projectConfig = await ProjectConfig.resolve(
+      { input: { assets: assetsDir } }
+    );
 
     const builder = new AmxxBuilder(projectConfig);
     jest.spyOn(builder, 'updateAsset');
@@ -137,8 +141,8 @@ describe('Builder', () => {
 
     for (const fileName of projectFiles) {
       expect(builder.updateAsset).toHaveBeenCalledWith(
-        assetsDir,
-        path.relative(assetsDir, fileName)
+        path.resolve(fileName),
+        { dir: path.resolve(assetsDir) }
       );
     }
   });
@@ -166,8 +170,9 @@ describe('Builder', () => {
 
     process.chdir(project.projectPath);
 
-    const projectConfig = await ProjectConfig.resolve();
-    projectConfig.input.assets = [assetsDir, extraAssetsDir];
+    const projectConfig = await ProjectConfig.resolve(
+      { input: { assets: [assetsDir, extraAssetsDir] } }
+    );
 
     const builder = new AmxxBuilder(projectConfig);
     jest.spyOn(builder, 'updateAsset');
@@ -176,16 +181,111 @@ describe('Builder', () => {
 
     for (const fileName of projectFiles) {
       expect(builder.updateAsset).toHaveBeenCalledWith(
-        assetsDir,
-        path.relative(assetsDir, fileName)
+        path.resolve(fileName),
+        { dir: path.resolve(assetsDir) }
       );
     }
 
     for (const fileName of extraProjectFiles) {
       expect(builder.updateAsset).toHaveBeenCalledWith(
-        extraAssetsDir,
-        path.relative(extraAssetsDir, fileName)
+        path.resolve(fileName),
+        { dir: path.resolve(extraAssetsDir) }
       );
+    }
+  });
+
+  it('should filter project assets', async () => {
+    const assetsDir = './src/assets';
+
+    const projectFiles = [
+      path.join(assetsDir, 'models/test.mdl'),
+      path.join(assetsDir, 'sprites/test.spr'),
+      path.join(assetsDir, 'sound/test.wav'),
+      path.join(assetsDir, 'maps/test.bsp')
+    ];
+
+    const excludeExtensions = ['mdl', 'bsp'];
+    const assetsFilter = `*.!(${excludeExtensions.join('|')})`;
+
+    const project = createProject(TEST_DIR);
+    await project.initDir(projectFiles);
+
+    process.chdir(project.projectPath);
+
+    const projectConfig = await ProjectConfig.resolve(
+      { input: { assets: { dir: assetsDir, filter: assetsFilter } } }
+    );
+
+    const builder = new AmxxBuilder(projectConfig);
+
+    await builder.buildAssets();
+
+    for (const fileName of projectFiles) {
+      const destFilePath = path.join(
+        projectConfig.output.assets,
+        path.relative(assetsDir, fileName)
+      );
+
+      const shouldExclude = some(
+        excludeExtensions,
+        (ext) => fileName.endsWith(`.${ext}`)
+      );
+
+      expect(fs.existsSync(destFilePath)).not.toEqual(shouldExclude);
+    }
+  });
+
+  it('should call update functions only with absolute paths', async () => {
+    const assetsDir = './src/scripts';
+    const scriptsDir = './src/scripts';
+    const includeDir = './src/include';
+
+    const projectFiles = [
+      path.join(includeDir, 'test1.inc'),
+      path.join(scriptsDir, 'test2.sma'),
+      path.join(scriptsDir, 'test3.sma'),
+      path.join(scriptsDir, 'test4.sma'),
+      path.join(scriptsDir, 'nested/test5.sma'),
+      path.join(scriptsDir, 'nested/nested/test6.sma'),
+      path.join(assetsDir, 'models/test7.mdl'),
+      path.join(assetsDir, 'sprites/test8.spr'),
+      path.join(assetsDir, 'sound/test9.wav'),
+      path.join(assetsDir, 'maps/test10.bsp')
+    ];
+
+    const project = createProject(TEST_DIR);
+    await project.initDir(projectFiles);
+
+    process.chdir(project.projectPath);
+
+    const projectConfig = await ProjectConfig.resolve(
+      { input: { assets: assetsDir, scripts: scriptsDir } }
+    );
+
+    const builder = new AmxxBuilder(projectConfig);
+
+    const updateAssetSpy = jest.spyOn(builder, 'updateAsset');
+    const updateScriptSpy = jest.spyOn(builder, 'updateScript');
+    const updateIncludeSpy = jest.spyOn(builder, 'updateInclude');
+
+    await builder.build({});
+
+    expect(updateAssetSpy).toBeCalled();
+    for (const call of updateAssetSpy.mock.calls) {
+      const [filePath] = call;
+      expect(path.isAbsolute(filePath)).toEqual(true);
+    }
+
+    expect(updateScriptSpy).toBeCalled();
+    for (const call of updateScriptSpy.mock.calls) {
+      const [srcDir] = call;
+      expect(path.isAbsolute(srcDir)).toEqual(true);
+    }
+
+    expect(updateIncludeSpy).toBeCalled();
+    for (const call of updateIncludeSpy.mock.calls) {
+      const [filePath] = call;
+      expect(path.isAbsolute(filePath)).toEqual(true);
     }
   });
 });

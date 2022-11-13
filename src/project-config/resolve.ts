@@ -1,49 +1,45 @@
+import type { PartialDeep } from 'type-fest';
 import { castArray, map, merge } from 'lodash';
 import path from 'path';
-import fs from 'fs';
 
-import logger from '../logger/logger';
 import defaults from './defaults';
-import { IProjectConfig } from '../types';
+import { IProjectConfig, IResolvedProjectConfig } from '../types';
 
-async function resolve(_configPath?: string): Promise<IProjectConfig> {
-  let userConfig: Partial<IProjectConfig> = null;
+function resolve(
+  overrides: PartialDeep<IProjectConfig> = {},
+  projectDir: string = ''
+): IResolvedProjectConfig {
+  const resolvePath = (p: string) => path.resolve(projectDir, p);
 
-  if (_configPath) {
-    const configPath = path.resolve(_configPath);
-
-    if (fs.existsSync(configPath)) {
-      userConfig = await import(configPath);
-    } else {
-      logger.error('Cannot read config file!');
-    }
-  }
-
-  const config: IProjectConfig = merge({}, defaults, userConfig);
+  const config: IProjectConfig = merge({}, defaults, overrides);
 
   // resolve paths
-  merge(config, {
+  const resolvedConfig = merge(config, {
     input: {
-      scripts: map(castArray(config.input.scripts), (dir) => path.resolve(dir)),
-      include: map(castArray(config.input.include), (dir) => path.resolve(dir)),
-      assets: map(castArray(config.input.assets), (dir) => path.resolve(dir)),
+      scripts: map(castArray(config.input.scripts), (dir) => resolvePath(dir)),
+      include: map(castArray(config.input.include), (dir) => resolvePath(dir)),
+      assets: map(castArray(config.input.assets), (input) => (
+        typeof input === 'object'
+          ? { ...input, dir: resolvePath(input.dir) }
+          : { dir: resolvePath(input) }
+      ))
     },
     output: {
-      scripts: path.resolve(config.output.scripts),
-      plugins: path.resolve(config.output.plugins),
-      include: path.resolve(config.output.include),
-      assets: path.resolve(config.output.assets)
+      scripts: resolvePath(config.output.scripts),
+      plugins: resolvePath(config.output.plugins),
+      include: resolvePath(config.output.include),
+      assets: resolvePath(config.output.assets)
     },
-    include: map(config.include, (include) => path.resolve(include)),
+    include: map(config.include, (include) => resolvePath(include)),
     compiler: {
-      dir: path.resolve(config.compiler.dir),
+      dir: resolvePath(config.compiler.dir),
     },
     thirdparty: {
-      dir: path.resolve(config.thirdparty.dir)
+      dir: resolvePath(config.thirdparty.dir)
     }
   });
 
-  return config;
+  return resolvedConfig;
 }
 
 export default resolve;

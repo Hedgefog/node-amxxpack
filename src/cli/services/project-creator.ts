@@ -2,17 +2,17 @@ import path from 'path';
 import fs from 'fs';
 import { exec } from 'child_process';
 import mkdirp from 'mkdirp';
-import { castArray, get, map, merge } from 'lodash';
+import { get, map, merge } from 'lodash';
 
 import ProjectConfig from '../../project-config';
 import { IProjectOptions } from '../types';
-import { IProjectConfig } from '../../types';
+import { IResolvedProjectConfig } from '../../types';
 import config from '../../config';
 import logger from '../../logger/logger';
 
 class ProjectCreator {
   public projectDir: string = null;
-  public projectConfig: IProjectConfig = null;
+  public projectConfig: IResolvedProjectConfig = null;
   public options: IProjectOptions = null;
   public isCurrentDir: boolean = false;
 
@@ -39,7 +39,7 @@ class ProjectCreator {
         : path.join(cwd, this.options.name);
     }
 
-    this.projectConfig = ProjectConfig.defaults;
+    this.projectConfig = ProjectConfig.resolve({}, this.projectDir);
   }
 
   public async createProject(): Promise<void> {
@@ -121,13 +121,13 @@ class ProjectCreator {
     logger.info('📁 Creating project directories...');
 
     const dirs = [
-      ...castArray(this.projectConfig.input.assets),
-      ...castArray(this.projectConfig.input.include),
-      ...castArray(this.projectConfig.input.scripts)
+      ...map(this.projectConfig.input.assets, 'dir'),
+      ...this.projectConfig.input.include,
+      ...this.projectConfig.input.scripts
     ];
 
     for (const dir of dirs) {
-      await mkdirp(path.join(this.projectDir, dir));
+      await mkdirp(dir);
     }
   }
 
