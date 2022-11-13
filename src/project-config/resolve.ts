@@ -9,7 +9,7 @@ function resolve(
   overrides: PartialDeep<IProjectConfig> = {},
   projectDir: string = ''
 ): IResolvedProjectConfig {
-  const resolvePath = (p: string) => path.resolve(projectDir, p);
+  const resolvePath = (p: string) => path.resolve(projectDir || '', p);
 
   const config: IProjectConfig = merge({}, defaults, overrides);
 
