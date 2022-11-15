@@ -1,3 +1,6 @@
+# 1.3.2
+- Fixed default config paths
+
 # 1.3.0
 - Added filtering and subdirs for assets
 - Downloader can now download a newer compiler version without specifying dev flag and build identifier

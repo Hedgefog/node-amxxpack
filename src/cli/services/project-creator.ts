@@ -114,7 +114,7 @@ class ProjectCreator {
     logger.info('🔧 Creating project configuration file...');
     await mkdirp(this.projectDir);
     const configPath = path.join(this.projectDir, config.projectConfig);
-    await fs.promises.writeFile(configPath, JSON.stringify(this.projectConfig, null, 2));
+    await fs.promises.writeFile(configPath, JSON.stringify(ProjectConfig.defaults, null, 2));
   }
 
   public async createDirectories() {
