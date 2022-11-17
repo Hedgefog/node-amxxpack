@@ -1,3 +1,6 @@
+# 1.3.3
+- `new` command replaced with `generate`
+
 # 1.3.2
 - Fixed default config paths
 

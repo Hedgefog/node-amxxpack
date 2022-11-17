@@ -66,8 +66,10 @@ program
   });
 
 program
-  .command('new')
+  .command('generate')
+  .alias('new')
   .alias('n')
+  .alias('g')
   .arguments('<type> <filename>')
   .option('--config, -c <path>', 'Config file', config.projectConfig)
   .option('--name, -n <name>', 'Plugin name')

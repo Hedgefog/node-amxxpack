@@ -52,7 +52,7 @@ npm install -g amxxpack
 - `amxxpack compile <path|glob>` - compile specific plugin in the project
   - `--config` - config file
   - `--no-cache` - disable caching
-- `amxxpack new <script|lib|include> [name]` - create a new file in the project workspace
+- `amxxpack generate <script|lib|include> [name]` - create a new file in the project workspace
   - `--config` - config file
   - `--name` - plugin name
   - `--version` - plugin version
@@ -61,7 +61,7 @@ npm install -g amxxpack
   - `--include` - include list separated by a comma
   - `--overwrite` - overwrite the file if it already exists
 - `amxpack i` - alias to `install` command
-- `amxpack n` - alias to `new` command
+- `amxpack g` - alias to `generate` command
 - `amxpack b` - alias to `build` command
 - `amxpack c` - alias to `compile` command
 
