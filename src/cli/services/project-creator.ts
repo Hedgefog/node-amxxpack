@@ -114,7 +114,18 @@ class ProjectCreator {
     logger.info('🔧 Creating project configuration file...');
     await mkdirp(this.projectDir);
     const configPath = path.join(this.projectDir, config.projectConfig);
-    await fs.promises.writeFile(configPath, JSON.stringify(ProjectConfig.defaults, null, 2));
+
+    const projectConfig = merge({}, ProjectConfig.defaults, {
+      output: {
+        base: './dist',
+        scripts: './addons/amxmodx/scripting',
+        plugins: './addons/amxmodx/plugins',
+        include: './addons/amxmodx/scripting/include',
+        assets: './'
+      },
+    });
+
+    await fs.promises.writeFile(configPath, JSON.stringify(projectConfig, null, 2));
   }
 
   public async createDirectories() {

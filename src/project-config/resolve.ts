@@ -14,6 +14,7 @@ function resolve(
   const resolvePath = (p: string) => (!isNil(p) ? path.resolve(projectDir || '', p) : null);
 
   const config: IProjectConfig = mergeWith({}, defaults, overrides, mergeConfigFn);
+  const outputBaseDir = resolvePath(config.output.base);
 
   // resolve paths
   const resolvedConfig = merge(config, {
@@ -27,10 +28,10 @@ function resolve(
       ))
     },
     output: {
-      scripts: resolvePath(config.output.scripts),
-      plugins: resolvePath(config.output.plugins),
-      include: resolvePath(config.output.include),
-      assets: resolvePath(config.output.assets)
+      scripts: path.resolve(outputBaseDir, config.output.scripts),
+      plugins: path.resolve(outputBaseDir, config.output.plugins),
+      include: path.resolve(outputBaseDir, config.output.include),
+      assets: path.resolve(outputBaseDir, config.output.assets)
     },
     include: map(config.include, resolvePath),
     compiler: {

@@ -148,4 +148,27 @@ describe('Project Config Resolver', () => {
     expect(projectConfig.thirdparty.dir).toBe(resolvePath(overrides.thirdparty.dir));
     expect(projectConfig.include).toEqual(map(overrides.include, resolvePath));
   });
+
+  it('should resolve out paths using base dir', async () => {
+    const outputBaseDir = './out';
+
+    const overrides = {
+      output: {
+        base: outputBaseDir,
+        scripts: './scripts',
+        plugins: './plugins',
+        include: './include',
+        assets: './assets'
+      }
+    };
+
+    const resolvePath = (p: string) => path.resolve(PROJECT_DIR, p);
+
+    const projectConfig = ProjectConfig.resolve(overrides, PROJECT_DIR);
+
+    expect(projectConfig.output.scripts).toBe(resolvePath(path.join(outputBaseDir, overrides.output.scripts)));
+    expect(projectConfig.output.plugins).toBe(resolvePath(path.join(outputBaseDir, overrides.output.plugins)));
+    expect(projectConfig.output.include).toBe(resolvePath(path.join(outputBaseDir, overrides.output.include)));
+    expect(projectConfig.output.assets).toBe(resolvePath(path.join(outputBaseDir, overrides.output.assets)));
+  });
 });

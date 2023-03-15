@@ -11,6 +11,7 @@ export interface IProjectConfig {
     assets: null | string | IAssetInput | (string | IAssetInput)[];
   };
   output: {
+    base?: null | string;
     scripts: null | string;
     plugins: null | string;
     include: null | string;

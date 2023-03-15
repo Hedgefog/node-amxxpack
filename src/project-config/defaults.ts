@@ -7,6 +7,7 @@ export default {
     assets: './assets',
   },
   output: {
+    base: '',
     scripts: './dist/addons/amxmodx/scripting',
     plugins: './dist/addons/amxmodx/plugins',
     include: './dist/addons/amxmodx/scripting/include',
