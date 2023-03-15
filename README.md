@@ -60,6 +60,7 @@ npm install -g amxxpack
   - `--lib` - library name
   - `--include` - include list separated by a comma
   - `--overwrite` - overwrite the file if it already exists
+- `amxxpack cache clean` - clean amxxpack cache
 - `amxpack i` - alias to `install` command
 - `amxpack g` - alias to `generate` command
 - `amxpack b` - alias to `build` command

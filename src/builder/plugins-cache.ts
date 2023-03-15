@@ -1,16 +1,22 @@
 import fs from 'fs';
+import path from 'path';
 import crypto from 'crypto';
 import NodeCache from 'node-cache';
+
+import createDirHash from '../utils/create-dir-hash';
 
 export enum CacheValueType {
   Source = 'src',
   Compiled = 'compiled',
+  Includes = 'Includes'
 }
 
 export default class PluginsCache {
   private cache: NodeCache;
 
-  constructor() {
+  constructor(
+    public projectDir: string
+  ) {
     this.cache = new NodeCache();
   }
 
@@ -29,6 +35,7 @@ export default class PluginsCache {
 
   public async isPluginUpdated(srcPath: string, pluginPath: string): Promise<boolean> {
     const srcCachedHash = this.cache.get(this.getFileCacheKey(srcPath, CacheValueType.Source));
+
     if (!srcCachedHash) {
       return false;
     }
@@ -48,6 +55,18 @@ export default class PluginsCache {
       return false;
     }
 
+    const projectIncludeHash = this.cache.get(
+      this.getFileCacheKey('.', CacheValueType.Includes)
+    );
+
+    const includesHash = this.cache.get(
+      this.getFileCacheKey(srcPath, CacheValueType.Includes)
+    );
+
+    if (projectIncludeHash !== includesHash) {
+      return false;
+    }
+
     return true;
   }
 
@@ -57,15 +76,36 @@ export default class PluginsCache {
 
     const pluginHash = await this.createFileHash(pluginPath);
     this.cache.set(this.getFileCacheKey(srcPath, CacheValueType.Compiled), pluginHash);
+
+    const includeHash = this.cache.get(
+      this.getFileCacheKey('.', CacheValueType.Includes)
+    );
+
+    this.cache.set(this.getFileCacheKey(srcPath, CacheValueType.Includes), includeHash);
+  }
+
+  public async updateProjectIncludes(includeDirs: string[]) {
+    const includeHash = await this.createProjectIncludesHash(includeDirs);
+    this.cache.set(this.getFileCacheKey('.', CacheValueType.Includes), includeHash);
   }
 
   public async deletePlugin(srcPath: string): Promise<void> {
     this.cache.del(this.getFileCacheKey(srcPath, CacheValueType.Source));
     this.cache.del(this.getFileCacheKey(srcPath, CacheValueType.Compiled));
+    this.cache.del(this.getFileCacheKey(srcPath, CacheValueType.Includes));
   }
 
   public getFileCacheKey(filePath: string, type: CacheValueType) {
-    return `${filePath}?${type}`;
+    return this.createHash(`${this.projectDir}:${filePath}?${type}`);
+  }
+
+  private async createProjectIncludesHash(includeDirs: string[]) {
+    const includeHash = await createDirHash(
+      includeDirs,
+      (p) => !p.info.isFile() || path.parse(p.info.name).ext === '.inc'
+    );
+
+    return includeHash;
   }
 
   private createHash(data: string | Buffer): string {

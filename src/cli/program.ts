@@ -66,6 +66,12 @@ program
   });
 
 program
+  .command('cache clean')
+  .action(async () => {
+    await controller.cleanCache();
+  });
+
+program
   .command('generate')
   .alias('new')
   .alias('n')

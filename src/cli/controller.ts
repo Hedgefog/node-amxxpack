@@ -1,4 +1,5 @@
 import path from 'path';
+import fs from 'fs';
 import { first, isArray } from 'lodash';
 
 import AmxxBuilder from '../builder';
@@ -9,6 +10,7 @@ import TemplateBuilder from './services/template-builder';
 import ProjectConfig from '../project-config';
 import { IProjectOptions } from './types';
 import logger from '../logger/logger';
+import config from '../config';
 
 class Controller {
   public async createBuilder(configPath: string): Promise<AmxxBuilder> {
@@ -145,6 +147,11 @@ class Controller {
         logger.error(`Invalid file type "${type}"!`);
       }
     }
+  }
+
+  public async cleanCache() {
+    fs.promises.rm(config.cacheFile);
+    fs.promises.rm(config.downloadDir, { recursive: true, force: true });
   }
 }
 
