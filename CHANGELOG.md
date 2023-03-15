@@ -1,3 +1,6 @@
+# 1.4.3
+- Added plugin includes caching
+
 # 1.4.2
 - Fixed project config generation
 
