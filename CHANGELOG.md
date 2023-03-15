@@ -1,3 +1,6 @@
+# 1.4.2
+- Fixed project config generation
+
 # 1.4.1
 - Fixed optional output
 

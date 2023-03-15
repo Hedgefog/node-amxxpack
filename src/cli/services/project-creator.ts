@@ -39,7 +39,7 @@ class ProjectCreator {
         : path.join(cwd, this.options.name);
     }
 
-    this.projectConfig = ProjectConfig.resolve({}, this.projectDir);
+    this.projectConfig = ProjectConfig.resolve({}, this.projectDir || '');
   }
 
   public async createProject(): Promise<void> {
