@@ -1,5 +1,5 @@
 import path from 'path';
-import { map } from 'lodash';
+import { assign, map } from 'lodash';
 
 import { TEST_TMP_DIR } from '../constants';
 import ProjectConfig from '../../src/project-config';
@@ -30,27 +30,20 @@ describe('Project Config Resolver', () => {
     expect(projectConfig).toEqual(defaultConfig);
   });
 
-  it('should resolve null paths as defaults', async () => {
-    const defaultConfig = ProjectConfig.resolve({}, PROJECT_DIR);
-
+  it('should resolve null output paths as null values', async () => {
     const projectConfig = ProjectConfig.resolve({
-      input: {
-        scripts: null,
-        include: null,
-        assets: null,
-      },
       output: {
         scripts: null,
         plugins: null,
         include: null,
         assets: null
-      },
-      compiler: { dir: null },
-      thirdparty: { dir: null },
-      include: null
+      }
     }, PROJECT_DIR);
 
-    expect(projectConfig).toEqual(defaultConfig);
+    expect(projectConfig.output.scripts).toBeNull();
+    expect(projectConfig.output.plugins).toBeNull();
+    expect(projectConfig.output.include).toBeNull();
+    expect(projectConfig.output.assets).toBeNull();
   });
 
   it('should resolve empty paths as project root', async () => {
@@ -162,13 +155,53 @@ describe('Project Config Resolver', () => {
       }
     };
 
-    const resolvePath = (p: string) => path.resolve(PROJECT_DIR, p);
-
     const projectConfig = ProjectConfig.resolve(overrides, PROJECT_DIR);
 
-    expect(projectConfig.output.scripts).toBe(resolvePath(path.join(outputBaseDir, overrides.output.scripts)));
-    expect(projectConfig.output.plugins).toBe(resolvePath(path.join(outputBaseDir, overrides.output.plugins)));
-    expect(projectConfig.output.include).toBe(resolvePath(path.join(outputBaseDir, overrides.output.include)));
-    expect(projectConfig.output.assets).toBe(resolvePath(path.join(outputBaseDir, overrides.output.assets)));
+    const resolveOutPath = (p: string) => path.resolve(PROJECT_DIR, outputBaseDir, p);
+
+    expect(projectConfig.output.scripts).toBe(resolveOutPath(overrides.output.scripts));
+    expect(projectConfig.output.plugins).toBe(resolveOutPath(overrides.output.plugins));
+    expect(projectConfig.output.include).toBe(resolveOutPath(overrides.output.include));
+    expect(projectConfig.output.assets).toBe(resolveOutPath(overrides.output.assets));
+  });
+
+  it('should resolve out paths with null values using base dir', async () => {
+    const outputBaseDir = './out';
+
+    const projectConfig = ProjectConfig.resolve({
+      output: {
+        base: outputBaseDir,
+        scripts: null,
+        plugins: null,
+        include: null,
+        assets: null
+      }
+    }, PROJECT_DIR);
+
+    expect(projectConfig.output.scripts).toBeNull();
+    expect(projectConfig.output.plugins).toBeNull();
+    expect(projectConfig.output.include).toBeNull();
+    expect(projectConfig.output.assets).toBeNull();
+  });
+
+  it('should resolve empty output paths as output base dir', async () => {
+    const outputBaseDir = './out';
+    const outputAbsBaseDir = path.resolve(PROJECT_DIR, outputBaseDir);
+
+    const projectConfig = ProjectConfig.resolve({
+      output: {
+        base: outputBaseDir,
+        scripts: '',
+        plugins: '',
+        include: '',
+        assets: ''
+      }
+    }, PROJECT_DIR);
+
+
+    expect(projectConfig.output.scripts).toBe(outputAbsBaseDir);
+    expect(projectConfig.output.plugins).toBe(outputAbsBaseDir);
+    expect(projectConfig.output.include).toBe(outputAbsBaseDir);
+    expect(projectConfig.output.assets).toBe(outputAbsBaseDir);
   });
 });
