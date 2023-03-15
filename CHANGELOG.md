@@ -1,8 +1,11 @@
+# 1.4.1
+- Fixed optional output
+
 # 1.4.0
 - Improved default paths resolving
 - Added base dir to output options
 - Added optional include out path support
-- Improve logs format
+- Improved logs format
 
 # 1.3.3
 - `new` command replaced with `generate`

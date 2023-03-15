@@ -167,6 +167,10 @@ export default class AmxxBuilder {
   }
 
   async updateAsset(filePath: string, assetInput: IAssetInput): Promise<void> {
+    if (!this.projectConfig.output.assets) {
+      return;
+    }
+
     const srcFile = path.relative(assetInput.dir, filePath);
 
     if (assetInput.filter && !this.execPathFilter(srcFile, assetInput.filter)) {
@@ -203,6 +207,10 @@ export default class AmxxBuilder {
     srcFile: string,
     compileOptions: CompileOptions = {}
   ): Promise<void> {
+    if (!this.projectConfig.output.plugins) {
+      return;
+    }
+
     const srcPath = path.join(srcDir, srcFile);
     const { name: scriptName, dir: srcNestedDir } = path.parse(srcFile);
 
