@@ -44,6 +44,10 @@ async function getDistFileName(dist: IDist) {
 
 async function downloadDist(dist: IDist): Promise<IDistFile> {
   const fileName = await getDistFileName(dist);
+  if (!fileName) {
+    throw new Error('Failed to fetch dist file meta!');
+  }
+
   const downloadOpts = resolveDownloadDistOpts(fileName, dist);
   const result = await download(downloadOpts.url, downloadOpts.path);
 
@@ -93,6 +97,8 @@ async function downloadCompiler(options: IDownloadCompilerOptions): Promise<void
   const distArchives = await Promise.all(
     map(dists, downloadDist)
   );
+
+  logger.info('Extracting compiler files...');
 
   for (const distArchive of distArchives) {
     await extractDist(distArchive.path, compilerPath);
