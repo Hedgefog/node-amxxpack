@@ -43,9 +43,10 @@ class Logger {
 
     const label = this.getLevelLabel(level);
     const coloredMessage = this.colorifyMessageByLevel(level, message);
+    const time = (new Date()).toLocaleTimeString();
 
     // eslint-disable-next-line no-console
-    console.log(label, coloredMessage);
+    console.log(`[${time}]`, label, coloredMessage);
   }
 
   private colorifyMessageByLevel(level: LogLevel, message: string) {
