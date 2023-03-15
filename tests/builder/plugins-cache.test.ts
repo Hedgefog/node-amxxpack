@@ -9,6 +9,7 @@ import { TEST_TMP_DIR } from '../constants';
 import PluginsCache, { CacheValueType } from '../../src/builder/plugins-cache';
 
 const TEST_DIR = path.join(TEST_TMP_DIR, 'plugin-cache');
+const TEST_INCLUDE_DIR = path.join(TEST_DIR, 'include');
 
 describe('Plugins Cache', () => {
   beforeAll(async () => {
@@ -19,13 +20,15 @@ describe('Plugins Cache', () => {
     rimraf.sync(`${TEST_DIR}/*`);
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     rimraf.sync(`${TEST_DIR}/*`);
     jest.clearAllMocks();
+    await mkdirp(TEST_INCLUDE_DIR);
   });
 
   it('should update files in cache', async () => {
-    const pluginCache = new PluginsCache();
+    const pluginCache = new PluginsCache(TEST_DIR);
+    await pluginCache.updateProjectIncludes([TEST_INCLUDE_DIR]);
 
     const srcPath = path.join(TEST_DIR, 'test.sma');
     const pluginPath = path.join(TEST_DIR, 'test.amxx');
@@ -41,7 +44,8 @@ describe('Plugins Cache', () => {
   });
 
   it('should detect cached plugin file changes', async () => {
-    const pluginCache = new PluginsCache();
+    const pluginCache = new PluginsCache(TEST_DIR);
+    await pluginCache.updateProjectIncludes([TEST_INCLUDE_DIR]);
 
     const srcPath = path.join(TEST_DIR, 'test.sma');
     const pluginPath = path.join(TEST_DIR, 'test.amxx');
@@ -59,7 +63,8 @@ describe('Plugins Cache', () => {
   });
 
   it('should detect cached src file changes', async () => {
-    const pluginCache = new PluginsCache();
+    const pluginCache = new PluginsCache(TEST_DIR);
+    await pluginCache.updateProjectIncludes([TEST_INCLUDE_DIR]);
 
     const srcPath = path.join(TEST_DIR, 'test.sma');
     const pluginPath = path.join(TEST_DIR, 'test.amxx');
@@ -77,7 +82,8 @@ describe('Plugins Cache', () => {
   });
 
   it('should detect cached plugin file deletion', async () => {
-    const pluginCache = new PluginsCache();
+    const pluginCache = new PluginsCache(TEST_DIR);
+    await pluginCache.updateProjectIncludes([TEST_INCLUDE_DIR]);
 
     const srcPath = path.join(TEST_DIR, 'test.sma');
     const pluginPath = path.join(TEST_DIR, 'test.amxx');
@@ -95,7 +101,8 @@ describe('Plugins Cache', () => {
   });
 
   it('should delete files from cache', async () => {
-    const pluginCache = new PluginsCache();
+    const pluginCache = new PluginsCache(TEST_DIR);
+    await pluginCache.updateProjectIncludes([TEST_INCLUDE_DIR]);
 
     const srcPath = path.join(TEST_DIR, 'test.sma');
     const pluginPath = path.join(TEST_DIR, 'test.amxx');
@@ -113,7 +120,8 @@ describe('Plugins Cache', () => {
   });
 
   it('should load cache file', async () => {
-    const pluginCache = new PluginsCache();
+    const pluginCache = new PluginsCache(TEST_DIR);
+    await pluginCache.updateProjectIncludes([TEST_INCLUDE_DIR]);
 
     const cacheFilePath = path.join(TEST_DIR, 'cache.json');
     const srcPath = path.join(TEST_DIR, 'test.sma');
@@ -129,7 +137,8 @@ describe('Plugins Cache', () => {
   });
 
   it('should save cache file', async () => {
-    const pluginCache = new PluginsCache();
+    const pluginCache = new PluginsCache(TEST_DIR);
+    await pluginCache.updateProjectIncludes([TEST_INCLUDE_DIR]);
 
     const cacheFilePath = path.join(TEST_DIR, 'cache.json');
     const srcPath = path.join(TEST_DIR, 'test.sma');
@@ -147,5 +156,43 @@ describe('Plugins Cache', () => {
     const cacheData = JSON.parse(cacheFileContent);
 
     expect(cacheData).toMatchObject(nodeCache.data);
+  });
+
+  it('should detect cached include changes for plugin', async () => {
+    const pluginCache = new PluginsCache(TEST_DIR);
+    await pluginCache.updateProjectIncludes([TEST_INCLUDE_DIR]);
+
+    const srcPath = path.join(TEST_DIR, 'test.sma');
+    const pluginPath = path.join(TEST_DIR, 'test.amxx');
+    const includePath = path.join(TEST_INCLUDE_DIR, 'test.inc');
+
+    await fs.promises.writeFile(srcPath, 'src-content');
+    await fs.promises.writeFile(pluginPath, 'compiled-content');
+    await fs.promises.writeFile(includePath, 'include-content');
+
+    await pluginCache.updatePlugin(srcPath, pluginPath);
+    await pluginCache.updateProjectIncludes([TEST_INCLUDE_DIR]);
+
+    const isUpdated = await pluginCache.isPluginUpdated(srcPath, pluginPath);
+
+    expect(isUpdated).toBe(false);
+  });
+
+  it('should not detect cached include changes for plugin', async () => {
+    const pluginCache = new PluginsCache(TEST_DIR);
+    await pluginCache.updateProjectIncludes([TEST_INCLUDE_DIR]);
+
+    const srcPath = path.join(TEST_DIR, 'test.sma');
+    const pluginPath = path.join(TEST_DIR, 'test.amxx');
+
+    await fs.promises.writeFile(srcPath, 'src-content');
+    await fs.promises.writeFile(pluginPath, 'compiled-content');
+
+    await pluginCache.updatePlugin(srcPath, pluginPath);
+    await pluginCache.updateProjectIncludes([TEST_INCLUDE_DIR]);
+
+    const isUpdated = await pluginCache.isPluginUpdated(srcPath, pluginPath);
+
+    expect(isUpdated).toBe(true);
   });
 });

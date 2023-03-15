@@ -47,7 +47,7 @@ export default class AmxxBuilder {
 
   async watch(compileOptions: CompileOptions): Promise<void> {
     await this.watchAssets();
-    await this.watchInclude();
+    await this.watchInclude(compileOptions);
     await this.watchScripts(compileOptions);
   }
 
@@ -111,11 +111,17 @@ export default class AmxxBuilder {
     }
   }
 
-  async watchInclude(): Promise<void> {
+  async watchInclude(compileOptions: CompileOptions): Promise<void> {
     await this.watchDir(
       this.projectConfig.input.include,
       INCLUDE_PATH_PATTERN,
-      (filePath: string) => this.updateInclude(filePath)
+      async (filePath: string) => {
+        await this.updateInclude(filePath);
+
+        if (!compileOptions.noCache) {
+          await this.pluginCache.updateProjectIncludes(this.projectConfig.input.include);
+        }
+      }
     );
   }
 
@@ -316,8 +322,9 @@ export default class AmxxBuilder {
   }
 
   private initPluginCache() {
-    this.pluginCache = new PluginsCache();
+    this.pluginCache = new PluginsCache(process.cwd());
     this.pluginCache.load(config.cacheFile);
+    this.pluginCache.updateProjectIncludes(this.projectConfig.input.include);
   }
 
   private execPathFilter(filePath: string, filter: string | string[]) {
