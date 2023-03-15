@@ -28,6 +28,7 @@
         "no-await-in-loop": "off",
         "no-restricted-syntax": "off",
         "semi": "error",
-        "no-plusplus": "off"
+        "no-plusplus": "off",
+        "no-continue": "off"
     }
 }
