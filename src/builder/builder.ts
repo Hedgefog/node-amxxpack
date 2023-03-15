@@ -180,6 +180,10 @@ export default class AmxxBuilder {
   }
 
   async updateInclude(filePath: string): Promise<void> {
+    if (!this.projectConfig.output.include) {
+      return;
+    }
+
     const destPath = path.join(this.projectConfig.output.include, path.parse(filePath).base);
 
     await mkdirp(this.projectConfig.output.include);

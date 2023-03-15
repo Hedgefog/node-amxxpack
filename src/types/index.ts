@@ -6,31 +6,31 @@ export interface IAssetInput {
 
 export interface IProjectConfig {
   input: {
-    scripts: string | string[];
-    include: string | string[];
-    assets: string | string[] | IAssetInput | IAssetInput[];
+    scripts: null | string | string[];
+    include: null | string | string[];
+    assets: null | string | IAssetInput | (string | IAssetInput)[];
   };
   output: {
-    scripts: string;
-    plugins: string;
-    include: string;
-    assets: string;
+    scripts: null | string;
+    plugins: null | string;
+    include: null | string;
+    assets: null | string;
   };
   compiler: {
-    dir: string;
+    dir: null | string;
     version: string;
     addons: [];
     dev: boolean;
     executable: string;
   };
   thirdparty: {
-    dir: string,
+    dir: string | null;
     dependencies: {
       name: string;
       url: string;
     }[];
   };
-  include: string[];
+  include: null | string[];
   rules: {
     flatCompilation: boolean;
   };
@@ -53,5 +53,18 @@ export interface IResolvedProjectConfig extends IProjectConfig {
     scripts: string[];
     include: string[];
     assets: IAssetInput[];
+  };
+  output: {
+    scripts: string;
+    plugins: string;
+    include: string;
+    assets: string;
+  };
+  include: string[];
+  compiler: IProjectConfig['compiler'] & {
+    dir: string;
+  };
+  thirdparty: IProjectConfig['thirdparty'] & {
+    dir: string;
   };
 }

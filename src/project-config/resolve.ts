@@ -1,25 +1,27 @@
 import type { PartialDeep } from 'type-fest';
-import { castArray, map, merge } from 'lodash';
+import { castArray, isNil, isObject, map, merge, mergeWith } from 'lodash';
 import path from 'path';
 
 import defaults from './defaults';
 import { IProjectConfig, IResolvedProjectConfig } from '../types';
 
+const mergeConfigFn = (val1: any, val2: any) => (isNil(val2) ? val1 : undefined);
+
 function resolve(
   overrides: PartialDeep<IProjectConfig> = {},
   projectDir: string = ''
 ): IResolvedProjectConfig {
-  const resolvePath = (p: string) => path.resolve(projectDir || '', p);
+  const resolvePath = (p: string) => (!isNil(p) ? path.resolve(projectDir || '', p) : null);
 
-  const config: IProjectConfig = merge({}, defaults, overrides);
+  const config: IProjectConfig = mergeWith({}, defaults, overrides, mergeConfigFn);
 
   // resolve paths
   const resolvedConfig = merge(config, {
     input: {
-      scripts: map(castArray(config.input.scripts), (dir) => resolvePath(dir)),
-      include: map(castArray(config.input.include), (dir) => resolvePath(dir)),
+      scripts: map(castArray(config.input.scripts), resolvePath),
+      include: map(castArray(config.input.include), resolvePath),
       assets: map(castArray(config.input.assets), (input) => (
-        typeof input === 'object'
+        isObject(input)
           ? { ...input, dir: resolvePath(input.dir) }
           : { dir: resolvePath(input) }
       ))
@@ -30,7 +32,7 @@ function resolve(
       include: resolvePath(config.output.include),
       assets: resolvePath(config.output.assets)
     },
-    include: map(config.include, (include) => resolvePath(include)),
+    include: map(config.include, resolvePath),
     compiler: {
       dir: resolvePath(config.compiler.dir),
     },
