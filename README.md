@@ -140,3 +140,27 @@ You can also specify subdirectories for copying. With this configuration, the bu
     }
   }
 ```
+
+### Compiler configuration
+Using the `compiler` configuration you can specify the compiler version you want to use.
+
+For example, if you want to use AmxModX 1.9 with `cstrike` addon in your project, then use this configuration:
+```json
+{
+  "compiler": {
+    "version": "1.9",
+    "addons": ["cstrike"]
+  }
+}
+```
+
+In case you want to use a dev build from `amxxdrop` you should set `dev` flag to `true` and specify the build you want to use in the `version` field:
+```json
+{
+  "compiler": {
+    "version": "1.10.0-git5467",
+    "dev": true,
+    "addons": ["cstrike"]
+  }
+}
+```
