@@ -3,6 +3,8 @@ import path from 'path';
 import crypto from 'crypto';
 import NodeCache from 'node-cache';
 
+import createDirHash from '../utils/create-dir-hash';
+
 export enum CacheValueType {
   Source = 'src',
   Compiled = 'compiled',
@@ -98,7 +100,7 @@ export default class PluginsCache {
   }
 
   private async createProjectIncludesHash(includeDirs: string[]) {
-    const includeHash = await this.createDirHash(
+    const includeHash = await createDirHash(
       includeDirs,
       (p) => !p.info.isFile() || path.parse(p.info.name).ext === '.inc'
     );
@@ -122,42 +124,5 @@ export default class PluginsCache {
     const hash = this.createHash(buffer);
 
     return hash;
-  }
-
-  private async createDirHash(
-    dirs: string[],
-    filterFn: (p: {
-      dir: string,
-      info: fs.Dirent
-    }) => boolean = null,
-    initialHash: crypto.Hash = null
-  ) {
-    const hashSum = initialHash || crypto.createHash('sha256');
-
-    for (const dir of dirs) {
-      if (!fs.existsSync(dir)) {
-        continue;
-      }
-
-      const items = await fs.promises.readdir(dir, { withFileTypes: true });
-
-      for (const item of items) {
-        const fullPath = path.join(dir, item.name);
-
-        if (filterFn && !filterFn({ dir, info: item })) {
-          continue;
-        }
-
-        if (item.isFile()) {
-          const fileStat = await fs.promises.stat(fullPath);
-          const data = `${fullPath}:${fileStat.size}:${fileStat.mtimeMs}`;
-          hashSum.update(data);
-        } else if (item.isDirectory()) {
-          this.createDirHash([fullPath], filterFn, hashSum);
-        }
-      }
-    }
-
-    return hashSum.digest('hex');
   }
 }
