@@ -180,6 +180,10 @@ export default class AmxxBuilder {
   }
 
   async updateInclude(filePath: string): Promise<void> {
+    if (!this.projectConfig.output.include) {
+      return;
+    }
+
     const destPath = path.join(this.projectConfig.output.include, path.parse(filePath).base);
 
     await mkdirp(this.projectConfig.output.include);
@@ -250,9 +254,9 @@ export default class AmxxBuilder {
       const relativeFilePath = filename ? path.relative(process.cwd(), filename) : relateiveSrcPath;
 
       if (type === AMXPCMessageType.Error || type === AMXPCMessageType.FatalError) {
-        logger.error(`${normalizePath(relativeFilePath)}(${startLine})`, type, code, ':', text);
+        logger.error(`${normalizePath(relativeFilePath)}:${startLine}`, '-', type, code, ':', text);
       } else if (type === AMXPCMessageType.Warning) {
-        logger.warn(`${normalizePath(relativeFilePath)}(${startLine})`, type, code, ':', text);
+        logger.warn(`${normalizePath(relativeFilePath)}:${startLine}`, '-', type, code, ':', text);
       } else if (type === AMXPCMessageType.Echo) {
         logger.debug(text);
       }
@@ -289,9 +293,15 @@ export default class AmxxBuilder {
     const pathPattern = map(castArray(baseDir), (dir) => path.join(dir, pattern));
     const watcher = setupWatch(pathPattern);
 
-    const updateFn = (filePath: string) => cb(path.normalize(filePath)).catch(
-      (err: Error) => logger.error(err.message)
-    );
+    const updateFn = async (filePath: string) => {
+      logger.info('File change detected. Starting incremental compilation...');
+
+      await cb(path.normalize(filePath)).catch(
+        (err: Error) => logger.error(err.message)
+      );
+
+      logger.info('Compilation complete. Watching for file changes.');
+    };
 
     watcher.on('add', updateFn);
     watcher.on('change', updateFn);
