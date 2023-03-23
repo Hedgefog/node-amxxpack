@@ -39,7 +39,14 @@ function resolve(
       dir: resolvePath(config.compiler.dir),
     },
     thirdparty: {
-      dir: resolvePath(config.thirdparty.dir)
+      dir: resolvePath(config.thirdparty.dir),
+      dependencies: map(
+        config.thirdparty.dependencies,
+        (dependency) => ({
+          ...dependency,
+          strip: dependency.strip || 0
+        })
+      )
     }
   });
 

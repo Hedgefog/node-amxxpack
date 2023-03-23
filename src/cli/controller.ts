@@ -78,7 +78,9 @@ class Controller {
       await downloadThirdparty({
         name: dependency.name,
         url: dependency.url,
-        dir: projectConfig.thirdparty.dir
+        dir: projectConfig.thirdparty.dir,
+        strip: dependency.strip,
+        filter: dependency.filter
       });
     }
   }
