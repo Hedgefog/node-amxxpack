@@ -1,3 +1,6 @@
+# 1.4.4
+- Added `strip` and `filter` param for thirdparties
+
 # 1.4.3
 - Added plugin includes caching
 - Added `cache clean` command

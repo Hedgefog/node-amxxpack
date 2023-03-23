@@ -4,6 +4,13 @@ export interface IAssetInput {
   filter?: string | string[];
 }
 
+export interface IDependency {
+  name: string;
+  url: string;
+  strip?: number;
+  filter?: string | string[];
+}
+
 export interface IProjectConfig {
   input: {
     scripts: null | string | string[];
@@ -26,10 +33,7 @@ export interface IProjectConfig {
   };
   thirdparty: {
     dir: string | null;
-    dependencies: {
-      name: string;
-      url: string;
-    }[];
+    dependencies: IDependency[];
   };
   include: null | string[];
   rules: {
@@ -67,5 +71,8 @@ export interface IResolvedProjectConfig extends IProjectConfig {
   };
   thirdparty: IProjectConfig['thirdparty'] & {
     dir: string;
+    dependencies: (IDependency & {
+      strip: number;
+    })[]
   };
 }
