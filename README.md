@@ -106,6 +106,19 @@ You can use multiple directories as builder inputs, just specify an array of dir
   }
 ```
 
+### Disabling output
+Use `null` value for outputs to disable copying of specific output.
+
+For example, in this case, include files will not be copied to the output folder:
+
+```json
+  {
+    "output": {
+      "include": null
+    }
+  }
+```
+
 ### Assets filtering and subdirectories
 Using glob filters you can specify which assets should be copied.
 
