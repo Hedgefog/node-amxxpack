@@ -1,3 +1,6 @@
+# 1.4.5
+- Fix caching for nested include
+
 # 1.4.4
 - Added `strip` and `filter` param for thirdparties
 

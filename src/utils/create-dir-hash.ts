@@ -31,12 +31,12 @@ async function createDirHash(
         const data = `${fullPath}:${fileStat.size}:${fileStat.mtimeMs}`;
         hashSum.update(data);
       } else if (item.isDirectory()) {
-        createDirHash([fullPath], filterFn, hashSum);
+        await createDirHash([fullPath], filterFn, hashSum);
       }
     }
   }
 
-  return hashSum.digest('hex');
+  return hashSum;
 }
 
 export default createDirHash;

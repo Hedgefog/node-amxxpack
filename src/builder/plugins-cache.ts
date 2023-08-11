@@ -105,7 +105,7 @@ export default class PluginsCache {
       (p) => !p.info.isFile() || path.parse(p.info.name).ext === '.inc'
     );
 
-    return includeHash;
+    return includeHash.digest('hex');
   }
 
   private createHash(data: string | Buffer): string {
