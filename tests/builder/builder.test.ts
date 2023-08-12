@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import rimraf from 'rimraf';
 import mkdirp from 'mkdirp';
-import { some } from 'lodash';
+import { map, some } from 'lodash';
 
 import ProjectConfig from '../../src/project-config';
 import AmxxBuilder from '../../src/builder/builder';
@@ -69,7 +69,7 @@ describe('Builder', () => {
     process.chdir(project.projectPath);
 
     const projectConfig = await ProjectConfig.resolve(
-      { input: { scripts: [scriptsDir] } }
+      { input: { scripts: [scriptsDir], include: [] } }
     );
 
     const builder = new AmxxBuilder(projectConfig);
@@ -78,6 +78,79 @@ describe('Builder', () => {
 
     for (const fileName of projectFiles) {
       const compilerParams = createCompileParams(fileName, projectConfig);
+      expect(amxxpc).toHaveBeenCalledWith(compilerParams);
+    }
+  });
+
+  it('should build test project scripts with nested include dirs', async () => {
+    const includeDir = './src/include';
+    const scriptsDir = './src/scripts';
+    const scriptPath = path.join(scriptsDir, 'test.sma');
+    const projectNestedIncludeDirs = map(
+      ['nested', 'nested/nested', 'nested/nested/nested', 'nested2'],
+      (dir) => path.join(includeDir, dir)
+    );
+
+    const projectFiles = [
+      scriptPath,
+      path.join(includeDir, 'test.inc'),
+      ...map(projectNestedIncludeDirs, (dir) => path.join(dir, 'test.inc'))
+    ];
+
+    const project = createProject(TEST_DIR);
+    await project.initDir(projectFiles);
+
+    process.chdir(project.projectPath);
+
+    const projectConfig = await ProjectConfig.resolve(
+      { input: { scripts: [scriptsDir], include: [includeDir] } }
+    );
+
+    const builder = new AmxxBuilder(projectConfig);
+
+    await builder.buildScripts({});
+
+    const compilerParams = createCompileParams(scriptPath, {
+      ...projectConfig,
+      input: {
+        ...projectConfig.input,
+        include: map(
+          [includeDir, ...projectNestedIncludeDirs],
+          (dir) => path.resolve(project.projectPath, dir)
+        )
+      }
+    });
+
+    expect(amxxpc).toHaveBeenCalledWith(compilerParams);
+  });
+
+  it('should build test project without adding a non-existing include input dirs', async () => {
+    const includeDirs = ['./src/include', './src/include1', './src/include2'];
+    const scriptsDir = './src/scripts';
+
+    const projectFiles = [
+      path.join(scriptsDir, 'test.sma')
+    ];
+
+    const project = createProject(TEST_DIR);
+    await project.initDir(projectFiles);
+
+    process.chdir(project.projectPath);
+
+    const projectConfig = await ProjectConfig.resolve(
+      { input: { scripts: [scriptsDir], include: includeDirs } }
+    );
+
+    const builder = new AmxxBuilder(projectConfig);
+
+    await builder.buildScripts({});
+
+    for (const fileName of projectFiles) {
+      const compilerParams = createCompileParams(fileName, {
+        ...projectConfig,
+        input: { ...projectConfig.input, include: [] }
+      });
+
       expect(amxxpc).toHaveBeenCalledWith(compilerParams);
     }
   });
@@ -102,7 +175,7 @@ describe('Builder', () => {
     process.chdir(project.projectPath);
 
     const projectConfig = await ProjectConfig.resolve(
-      { input: { scripts: [scriptsDir, extraScriptsDir] } }
+      { input: { scripts: [scriptsDir, extraScriptsDir], include: [] } }
     );
 
     const builder = new AmxxBuilder(projectConfig);

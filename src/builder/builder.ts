@@ -203,7 +203,7 @@ export default class AmxxBuilder {
 
   async findPlugins(pattern: string): Promise<string[]> {
     const pathPattern = map(this.projectConfig.input.scripts, (dir) => path.join(dir, '**', pattern));
-    const matches = await globule.find(pathPattern);
+    const matches = await globule.find(pathPattern, { nodir: true });
 
     return matches.filter((filePath) => path.extname(filePath) === '.sma');
   }
@@ -251,7 +251,12 @@ export default class AmxxBuilder {
       includeDir: [
         path.join(this.projectConfig.compiler.dir, 'include'),
         ...this.projectConfig.include,
-        ...this.projectConfig.input.include,
+        ...map(
+          await globule.find(
+            map(this.projectConfig.input.include, (dir) => path.join(dir, '**/')),
+          ),
+          (dir) => path.resolve(dir)
+        ),
       ]
     });
 
