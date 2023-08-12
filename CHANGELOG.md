@@ -1,5 +1,9 @@
+# 1.4.6
+- Added nested include dirs input support
+- Fixed `cache clean` command
+
 # 1.4.5
-- Fix caching for nested include
+- Fixed caching for nested include
 
 # 1.4.4
 - Added `strip` and `filter` param for thirdparties
