@@ -152,8 +152,13 @@ class Controller {
   }
 
   public async cleanCache() {
-    fs.promises.rm(config.cacheFile);
+    if (fs.existsSync(config.cacheFile)) {
+      fs.promises.rm(config.cacheFile);
+    }
+
     fs.promises.rm(config.downloadDir, { recursive: true, force: true });
+
+    logger.info("🧹 Cache cleaned!");
   }
 }
 
