@@ -20,7 +20,11 @@ function resolve(
   // resolve paths
   const resolvedConfig = merge(config, {
     input: {
-      scripts: map(castArray(config.input.scripts), resolvePath),
+      scripts: map(castArray(config.input.scripts), (input) => (
+        isObject(input)
+          ? { ...input, dir: resolvePath(input.dir) }
+          : { dir: resolvePath(input) }
+      )),
       include: map(castArray(config.input.include), resolvePath),
       assets: map(castArray(config.input.assets), (input) => (
         isObject(input)

@@ -1,6 +1,6 @@
 import path from 'path';
 import fs from 'fs';
-import { first, isArray } from 'lodash';
+import { first, isArray, map } from 'lodash';
 
 import AmxxBuilder from '../builder';
 import downloadCompiler from '../downloaders/compiler';
@@ -114,7 +114,7 @@ class Controller {
     switch (type) {
       case 'script': {
         await templateBuilder.createFileFromTemplate(
-          resolveFilePath(projectConfig.input.scripts, fileName, 'sma'),
+          resolveFilePath(map(projectConfig.input.scripts, 'dir'), fileName, 'sma'),
           'script',
           options.overwrite
         );
@@ -132,7 +132,7 @@ class Controller {
       }
       case 'lib': {
         await templateBuilder.createFileFromTemplate(
-          resolveFilePath(projectConfig.input.scripts, fileName, 'sma'),
+          resolveFilePath(map(projectConfig.input.scripts, 'dir'), fileName, 'sma'),
           'library-script',
           options.overwrite
         );

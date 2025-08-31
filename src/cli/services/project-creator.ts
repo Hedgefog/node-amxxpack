@@ -134,7 +134,7 @@ class ProjectCreator {
     const dirs = [
       ...map(this.projectConfig.input.assets, 'dir'),
       ...this.projectConfig.input.include,
-      ...this.projectConfig.input.scripts
+      ...map(this.projectConfig.input.scripts, 'dir')
     ];
 
     for (const dir of dirs) {

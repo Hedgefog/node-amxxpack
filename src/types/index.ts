@@ -4,6 +4,13 @@ export interface IAssetInput {
   filter?: string | string[];
 }
 
+export interface ScriptInput {
+  dir: string;
+  dest?: string;
+  prefix?: string;
+  flat?: boolean;
+}
+
 export interface IDependency {
   name: string;
   url: string;
@@ -13,7 +20,7 @@ export interface IDependency {
 
 export interface IProjectConfig {
   input: {
-    scripts: null | string | string[];
+    scripts: null | string | IAssetInput | (string | ScriptInput)[];
     include: null | string | string[];
     assets: null | string | IAssetInput | (string | IAssetInput)[];
   };
@@ -55,7 +62,7 @@ export interface IProjectConfig {
 
 export interface IResolvedProjectConfig extends IProjectConfig {
   input: {
-    scripts: string[];
+    scripts: ScriptInput[];
     include: string[];
     assets: IAssetInput[];
   };

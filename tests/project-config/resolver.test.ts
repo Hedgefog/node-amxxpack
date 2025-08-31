@@ -1,5 +1,5 @@
 import path from 'path';
-import { assign, map } from 'lodash';
+import { isObject, map } from 'lodash';
 
 import { TEST_TMP_DIR } from '../constants';
 import ProjectConfig from '../../src/project-config';
@@ -64,7 +64,7 @@ describe('Project Config Resolver', () => {
       include: ['']
     }, PROJECT_DIR);
 
-    expect(projectConfig.input.scripts).toEqual([PROJECT_DIR]);
+    expect(projectConfig.input.scripts).toEqual([{ dir: PROJECT_DIR}]);
     expect(projectConfig.input.include).toEqual([PROJECT_DIR]);
     expect(projectConfig.input.assets).toEqual([{ dir: PROJECT_DIR }]);
     expect(projectConfig.output.scripts).toBe(PROJECT_DIR);
@@ -79,7 +79,10 @@ describe('Project Config Resolver', () => {
   it('should resolve absolute paths', async () => {
     const overrides = {
       input: {
-        scripts: path.resolve(PROJECT_DIR, 'scripts'),
+        scripts: [
+          path.resolve(PROJECT_DIR, 'scripts'),
+          { dir: path.resolve(PROJECT_DIR, 'scripts2') },
+        ],
         include: path.resolve(PROJECT_DIR, 'include'),
         assets: path.resolve(PROJECT_DIR, 'assets'),
       },
@@ -96,7 +99,7 @@ describe('Project Config Resolver', () => {
 
     const projectConfig = ProjectConfig.resolve(overrides);
 
-    expect(projectConfig.input.scripts).toEqual([overrides.input.scripts]);
+    expect(projectConfig.input.scripts).toEqual(map(overrides.input.scripts, (script) => isObject(script) ? script : { dir: script }));
     expect(projectConfig.input.include).toEqual([overrides.input.include]);
     expect(projectConfig.input.assets).toEqual([{ dir: overrides.input.assets }]);
     expect(projectConfig.output.scripts).toBe(overrides.output.scripts);
@@ -111,7 +114,10 @@ describe('Project Config Resolver', () => {
   it('should resolve relative paths', async () => {
     const overrides = {
       input: {
-        scripts: 'scripts',
+        scripts: [
+          'scripts',
+          { dir: 'scripts2' },
+        ],
         include: 'include',
         assets: 'assets',
       },
@@ -130,7 +136,7 @@ describe('Project Config Resolver', () => {
 
     const projectConfig = ProjectConfig.resolve(overrides, PROJECT_DIR);
 
-    expect(projectConfig.input.scripts).toEqual([resolvePath(overrides.input.scripts)]);
+    expect(projectConfig.input.scripts).toEqual(map(overrides.input.scripts, (script) => ({ dir: resolvePath(isObject(script) ? script.dir : script) })));
     expect(projectConfig.input.include).toEqual([resolvePath(overrides.input.include)]);
     expect(projectConfig.input.assets).toEqual([{ dir: resolvePath(overrides.input.assets) }]);
     expect(projectConfig.output.scripts).toBe(resolvePath(overrides.output.scripts));

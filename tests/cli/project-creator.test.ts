@@ -63,8 +63,8 @@ describe('Project Creator', () => {
       expect(fs.existsSync(dir)).toBe(true);
     }
 
-    for (const dir of projectConfig.input.scripts) {
-      expect(fs.existsSync(dir)).toBe(true);
+    for (const input of projectConfig.input.scripts) {
+      expect(fs.existsSync(input.dir)).toBe(true);
     }
 
     expect(fs.existsSync(path.join(testProject.projectPath, 'package.json'))).toBe(true);

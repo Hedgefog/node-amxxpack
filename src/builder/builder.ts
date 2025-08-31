@@ -16,6 +16,9 @@ import setupWatch from '../utils/setup-watch';
 export interface CompileOptions {
   ignoreErrors?: boolean;
   noCache?: boolean;
+  flat?: boolean;
+  prefix?: string;
+  dest?: string;
 }
 
 export default class AmxxBuilder {
@@ -55,14 +58,19 @@ export default class AmxxBuilder {
     let success = true;
 
     try {
-      for (const scriptsDir of this.projectConfig.input.scripts) {
+      for (const input of this.projectConfig.input.scripts) {
         await this.buildDir(
-          scriptsDir,
+          input.dir,
           SCRIPTS_PATH_PATTERN,
           // eslint-disable-next-line @typescript-eslint/no-loop-func
           async (filePath: string) => {
-            const srcFile = path.relative(scriptsDir, filePath);
-            const isUpdated = await this.updatePlugin(scriptsDir, srcFile, compileOptions);
+            const srcFile = path.relative(input.dir, filePath);
+            const isUpdated = await this.updatePlugin(input.dir, srcFile, {
+              ...compileOptions,
+              dest: input.dest,
+              flat: input.flat,
+              prefix: input.prefix,
+            });
             success = success && isUpdated;
           }
         );
@@ -99,13 +107,18 @@ export default class AmxxBuilder {
   }
 
   async watchScripts(compileOptions: CompileOptions): Promise<void> {
-    for (const scriptsDir of this.projectConfig.input.scripts) {
+    for (const input of this.projectConfig.input.scripts) {
       await this.watchDir(
-        scriptsDir,
+        input.dir,
         SCRIPTS_PATH_PATTERN,
         async (filePath: string) => {
-          const srcFile = path.relative(scriptsDir, filePath);
-          await this.updatePlugin(scriptsDir, srcFile, compileOptions);
+          const srcFile = path.relative(input.dir, filePath);
+          await this.updatePlugin(input.dir, srcFile, {
+            ...compileOptions,
+            dest: input.dest,
+            flat: input.flat,
+            prefix: input.prefix,
+          });
         }
       );
     }
@@ -202,7 +215,7 @@ export default class AmxxBuilder {
   }
 
   async findPlugins(pattern: string): Promise<string[]> {
-    const pathPattern = map(this.projectConfig.input.scripts, (dir) => path.join(dir, '**', pattern));
+    const pathPattern = map(this.projectConfig.input.scripts, (input) => path.join(input.dir, '**', pattern));
     const matches = await globule.find(pathPattern, { nodir: true });
 
     return matches.filter((filePath) => path.extname(filePath) === '.sma');
@@ -222,10 +235,11 @@ export default class AmxxBuilder {
 
     const destDir = path.join(
       this.projectConfig.output.plugins,
-      this.projectConfig.rules.flatCompilation ? '.' : srcNestedDir
+      compileOptions.dest || '',
+      (compileOptions.flat ?? this.projectConfig.rules.flatCompilation) ? '.' : srcNestedDir
     );
 
-    const pluginDest = path.join(destDir, `${scriptName}.amxx`);
+    const pluginDest = path.join(destDir, `${compileOptions.prefix || ''}${scriptName}.amxx`);
     const isUpdated = compileOptions.noCache
       ? false
       : await this.pluginCache.isPluginUpdated(srcPath, pluginDest);

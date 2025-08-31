@@ -106,6 +106,43 @@ You can use multiple directories as builder inputs, just specify an array of dir
   }
 ```
 
+### Input options
+You can specify additional options for the input directories.
+
+#### Flat compilation
+`flat` option is used to specify if the scripts should be compiled in a flat directory structure even if `rules.flatCompilation` is disabled.
+
+```json
+  {
+    "input": {
+      "scripts": ["./src/scripts", { "dir": "./src/scripts", "flat": false }]
+    }
+  }
+```
+
+#### Prefix
+`prefix` option is used to specify a prefix which will be added to the compiled plugin name.
+
+```json
+  {
+    "input": {
+      "scripts": ["./src/scripts", { "dir": "./src/scripts", "prefix": "test_" }]
+    }
+  }
+```
+
+#### Destination
+
+`dest` option is used to specify a destination directory for the compiled plugin. So plugin will be placed in the `sub` directory of the final compiled plugins directory.
+
+```json
+  {
+    "input": {
+      "scripts": ["./src/scripts", { "dir": "./src/scripts", "dest": "sub" }]
+    }
+  }
+```
+
 ### Disabling output
 Use `null` value for outputs to disable copying of specific output.
 
