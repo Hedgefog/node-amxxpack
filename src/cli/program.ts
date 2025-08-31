@@ -60,9 +60,20 @@ program
   .command('install')
   .alias('i')
   .option('--config, -c <path>', 'Config file', config.projectConfig)
+  .option('--compiler', 'Install compiler')
+  .option('--thirdparty', 'Install thirdparty dependencies')
   .action(async (_argument: string, options: any) => {
-    const { C: configPath } = options.opts();
-    await controller.install(configPath);
+    const { C: configPath, compiler, thirdparty } = options.opts();
+
+    const fullInstall = !compiler && !thirdparty;
+
+    await controller.install(
+      configPath,
+      {
+        compiler: fullInstall || !!compiler,
+        thirdparty: fullInstall || !!thirdparty
+      }
+    );
   });
 
 program

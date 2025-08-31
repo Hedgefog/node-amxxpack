@@ -64,24 +64,28 @@ class Controller {
     await builder.build(compileOptions);
   }
 
-  public async install(configPath: string): Promise<void> {
+  public async install(configPath: string, options: { compiler: boolean; thirdparty: boolean }): Promise<void> {
     const projectConfig = await ProjectConfig.load(configPath);
 
-    await downloadCompiler({
-      path: projectConfig.compiler.dir,
-      dists: projectConfig.compiler.addons,
-      version: projectConfig.compiler.version,
-      dev: projectConfig.compiler.dev
-    });
-
-    for (const dependency of projectConfig.thirdparty.dependencies) {
-      await downloadThirdparty({
-        name: dependency.name,
-        url: dependency.url,
-        dir: projectConfig.thirdparty.dir,
-        strip: dependency.strip,
-        filter: dependency.filter
+    if (options.compiler) {
+      await downloadCompiler({
+        path: projectConfig.compiler.dir,
+        dists: projectConfig.compiler.addons,
+        version: projectConfig.compiler.version,
+        dev: projectConfig.compiler.dev
       });
+    }
+
+    if (options.thirdparty) {
+      for (const dependency of projectConfig.thirdparty.dependencies) {
+        await downloadThirdparty({
+          name: dependency.name,
+          url: dependency.url,
+          dir: projectConfig.thirdparty.dir,
+          strip: dependency.strip,
+          filter: dependency.filter
+        });
+      }
     }
   }
 
