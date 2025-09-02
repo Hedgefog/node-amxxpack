@@ -1,7 +1,7 @@
 import chokidar from 'chokidar';
 
-function setupWatch(pathPattern: string | string[]) {
-  const watcher = chokidar.watch(pathPattern, {
+function setupWatch(dir: string | string[]) {
+  const watcher = chokidar.watch(dir, {
     persistent: true,
     ignoreInitial: true,
     interval: 300,
@@ -17,7 +17,6 @@ function setupWatch(pathPattern: string | string[]) {
   });
 
   watcher.on('error', (err) => {
-    // eslint-disable-next-line no-console
     console.error('Watcher failure', err);
     process.exit(1);
   });

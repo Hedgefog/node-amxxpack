@@ -1,6 +1,6 @@
 import path from 'path';
 
-const amxxpcMock = jest.fn().mockImplementation((params) => ({
+const compilerMock = jest.fn().mockImplementation((params) => ({
   output: {
     messages: [{
       type: 'echo',
@@ -13,4 +13,4 @@ const amxxpcMock = jest.fn().mockImplementation((params) => ({
   success: true
 }));
 
-export default amxxpcMock;
+export default compilerMock;

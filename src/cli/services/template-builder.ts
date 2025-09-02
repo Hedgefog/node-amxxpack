@@ -1,10 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import { defaults, get, map, merge } from 'lodash';
-import mkdirp from 'mkdirp';
+import { mkdirp } from 'mkdirp';
 
 import { IAddTemplateContext } from '../types';
-import { IProjectConfig } from '../../types';
+import { IResolvedProjectConfig } from '../../types';
 import logger from '../../logger/logger';
 
 class TemplateBuilder {
@@ -12,7 +12,7 @@ class TemplateBuilder {
   public rawIncludes: string = null;
 
   constructor(
-    public projectConfig: IProjectConfig,
+    public projectConfig: IResolvedProjectConfig,
     context: IAddTemplateContext,
     contextDefaults: Partial<IAddTemplateContext>
   ) {
@@ -22,11 +22,11 @@ class TemplateBuilder {
     );
   }
 
-  async buildTemplate(name: string, contextOverride: Partial<IAddTemplateContext>) {
+  async buildTemplate(name: string, contextOverride: IAddTemplateContext) {
     const templatePath = get(
       this.projectConfig.cli.templates.files,
       name,
-      path.join(__dirname, `../../../resources/templates/${name}.txt`)
+      path.join(__dirname, `../../../resources/templates/${this.projectConfig.compiler.config.cli.templateDir}/${name}.txt`)
     );
 
     const templateString = await fs.promises.readFile(templatePath, 'utf8');
@@ -36,11 +36,7 @@ class TemplateBuilder {
       (substring: string, ...args: string[]) => {
         const [key] = args;
 
-        return get(
-          contextOverride,
-          key,
-          get(this.context, key, substring)
-        );
+        return get(contextOverride, key, get(this.context, key, substring)) as string;
       }
     );
 
@@ -58,7 +54,7 @@ class TemplateBuilder {
     const rawIncludes = (
       await Promise.all(
         map(
-          this.context.INCLUDES,
+          this.context.INCLUDES as string[],
           (includeName: string) => this.buildTemplate(
             'include-directive',
             { FILE: includeName }
@@ -73,7 +69,7 @@ class TemplateBuilder {
       { flag: overwrite ? 'w' : 'wx' }
     );
 
-    logger.info('New file created:', filePath);
+    logger.info('📄 New file created:', filePath);
   }
 }
 

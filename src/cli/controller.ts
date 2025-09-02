@@ -3,47 +3,48 @@ import fs from 'fs';
 import { first, isArray, map } from 'lodash';
 
 import AmxxBuilder from '../builder';
-import downloadCompiler from '../downloaders/compiler';
-import downloadThirdparty from '../downloaders/thirdparty';
+import Downloader from '../downloaders';
 import ProjectCreator from './services/project-creator';
 import TemplateBuilder from './services/template-builder';
 import ProjectConfig from '../project-config';
 import { IProjectOptions } from './types';
 import logger from '../logger/logger';
 import config from '../config';
+import { IBuildOptions } from '../builder/builder';
+import { FileType } from './constants';
+import CLIError from '../common/cli-error';
 
 class Controller {
-  public async createBuilder(configPath: string): Promise<AmxxBuilder> {
-    const projectConfig = await ProjectConfig.load(configPath);
-    const builder = new AmxxBuilder(projectConfig);
+  public async createBuilder(configPath: string, options: IBuildOptions): Promise<AmxxBuilder> {
+    const projectConfig = ProjectConfig.loadFromFile(configPath);
+    const builder = new AmxxBuilder(projectConfig, options);
 
     return builder;
   }
 
   public async create(options: IProjectOptions): Promise<void> {
+    if (!options.name) {
+      throw new CLIError('Project name cannot be empty!');
+    }
+
     const projectCreator = new ProjectCreator(options);
     await projectCreator.createProject();
   }
 
-  public async config(projectDir: string): Promise<void> {
-    const projectCreator = new ProjectCreator();
+  public async config(projectDir: string, type: string): Promise<void> {
+    const projectCreator = new ProjectCreator({ type });
     projectCreator.projectDir = projectDir;
     await projectCreator.createConfig();
   }
 
   public async compile(
-    scriptPath: string,
+    pattern: string,
     configPath: string,
     options: { noCache: boolean }
   ): Promise<void> {
-    const compileOptions = { noCache: options.noCache };
-    const builder = await this.createBuilder(configPath);
-    const matches = await builder.findPlugins(scriptPath);
-
-    for (const filePath of matches) {
-      const { dir: srcDir, base: srcFile } = path.parse(filePath);
-      await builder.compilePlugin(srcDir, srcFile, compileOptions);
-    }
+    const builder = await this.createBuilder(configPath, { noCache: options.noCache });
+    
+    await builder.buildScripts({ pattern });
   }
 
   public async build(
@@ -54,51 +55,52 @@ class Controller {
       noCache: boolean;
     }
   ): Promise<void> {
-    const builder = await this.createBuilder(configPath);
-    const compileOptions = { ignoreErrors: options.ignoreErrors, noCache: options.noCache };
+    const builder = await this.createBuilder(configPath, {
+      noCache: options.noCache,
+      ignoreErrors: options.ignoreErrors
+    });
 
     if (options.watch) {
-      await builder.watch(compileOptions);
+      await builder.watch();
     }
 
-    await builder.build(compileOptions);
+    await builder.build();
   }
 
   public async install(configPath: string, options: { compiler: boolean; thirdparty: boolean }): Promise<void> {
-    const projectConfig = await ProjectConfig.load(configPath);
+    const projectConfig = ProjectConfig.loadFromFile(configPath);
+    const downloader = new Downloader(projectConfig);
 
     if (options.compiler) {
-      await downloadCompiler({
-        path: projectConfig.compiler.dir,
-        dists: projectConfig.compiler.addons,
-        version: projectConfig.compiler.version,
-        dev: projectConfig.compiler.dev
-      });
+      await downloader.downloadCompiler();
     }
 
     if (options.thirdparty) {
-      for (const dependency of projectConfig.thirdparty.dependencies) {
-        await downloadThirdparty({
-          name: dependency.name,
-          url: dependency.url,
-          dir: projectConfig.thirdparty.dir,
-          strip: dependency.strip,
-          filter: dependency.filter
-        });
-      }
+      await downloader.downloadThirdparty();
     }
   }
 
-  public async add(configPath: string, type: string, fileName: string, options: {
+  public async add(configPath: string, type: FileType, fileName: string, options: {
     name?: string;
     version?: string;
     author?: string;
     library?: string;
     overwrite: boolean;
     include: string[];
-  }): Promise<any> {
-    const projectConfig = await ProjectConfig.load(configPath);
+  }): Promise<void> {
+    const projectConfig = ProjectConfig.loadFromFile(configPath);
+
+    const {
+      config: {
+        fileExtensions,
+        cli: { defaultIncludes }
+      }
+    } = projectConfig.compiler;
+
     const { base: includeName } = path.parse(fileName);
+
+
+    const includes = Array.from(new Set([...defaultIncludes, ...options.include]));
 
     const templateBuilder = new TemplateBuilder(projectConfig, {
       FILE_NAME: fileName,
@@ -106,7 +108,7 @@ class Controller {
       PLUGIN_VERSION: options.version,
       PLUGIN_AUTHOR: options.author,
       LIBRARY_NAME: options.library || includeName.replace(/-/g, '_'),
-      INCLUDES: options.include,
+      INCLUDES: includes,
       INCLUDE_NAME: includeName
     }, { PLUGIN_NAME: fileName });
 
@@ -116,33 +118,33 @@ class Controller {
     };
 
     switch (type) {
-      case 'script': {
+      case FileType.Script: {
         await templateBuilder.createFileFromTemplate(
-          resolveFilePath(map(projectConfig.input.scripts, 'dir'), fileName, 'sma'),
+          resolveFilePath(map(projectConfig.input.scripts, 'dir'), fileName, fileExtensions.script),
           'script',
           options.overwrite
         );
 
         break;
       }
-      case 'include': {
+      case FileType.Include: {
         await templateBuilder.createFileFromTemplate(
-          resolveFilePath(projectConfig.input.include, fileName, 'inc'),
+          resolveFilePath(projectConfig.input.include, fileName, fileExtensions.include),
           'include',
           options.overwrite
         );
 
         break;
       }
-      case 'lib': {
+      case FileType.Library: {
         await templateBuilder.createFileFromTemplate(
-          resolveFilePath(map(projectConfig.input.scripts, 'dir'), fileName, 'sma'),
+          resolveFilePath(map(projectConfig.input.scripts, 'dir'), fileName, fileExtensions.script),
           'library-script',
           options.overwrite
         );
 
         await templateBuilder.createFileFromTemplate(
-          resolveFilePath(projectConfig.input.include, includeName, 'inc'),
+          resolveFilePath(projectConfig.input.include, includeName, fileExtensions.include),
           'library-include',
           options.overwrite
         );
@@ -150,7 +152,7 @@ class Controller {
         break;
       }
       default: {
-        logger.error(`Invalid file type "${type}"!`);
+        throw new CLIError(`Invalid file type "${type}"!`);
       }
     }
   }

@@ -1,6 +1,6 @@
 import { map } from 'lodash';
 import Chance from 'chance';
-import mkdirp from 'mkdirp';
+import { mkdirp } from 'mkdirp';
 import fs from 'fs';
 import path from 'path';
 

@@ -1,4 +1,5 @@
 export interface IDist {
+  type: string;
   name: string;
   version: string;
   platform: string;

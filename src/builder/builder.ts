@@ -1,84 +1,84 @@
 import path from 'path';
-import mkdirp from 'mkdirp';
+import { mkdirp } from 'mkdirp';
 import globule from 'globule';
 import normalizePath from 'normalize-path';
 import { castArray, map } from 'lodash';
+import fs from 'fs';
 
-import amxxpc, { AMXPCMessageType } from './amxxpc';
-import { IAssetInput, IResolvedProjectConfig } from '../types';
-import { ASSETS_PATH_PATTERN, INCLUDE_PATH_PATTERN, SCRIPTS_PATH_PATTERN } from './constants';
+import compiler, { AMXPCMessageType } from './compiler';
+import { IAssetInput, IResolvedProjectConfig, IScriptInput } from '../types';
 import logger from '../logger/logger';
 import PluginsCache from './plugins-cache';
 import copyFile from '../utils/copy-file';
 import config from '../config';
 import setupWatch from '../utils/setup-watch';
+import CLIError from '../common/cli-error';
 
-export interface CompileOptions {
-  ignoreErrors?: boolean;
+export interface IBuildOptions {
   noCache?: boolean;
-  flat?: boolean;
-  prefix?: string;
-  dest?: string;
+  ignoreErrors?: boolean;
 }
 
 export default class AmxxBuilder {
-  private pluginCache: PluginsCache;
+  private pluginsCache: PluginsCache = null;
+  private scriptsPathPattern: string;
+  private includePathPattern: string;
+  private assetsPathPattern: string;
 
-  constructor(private projectConfig: IResolvedProjectConfig) {
-    this.initPluginCache();
+  constructor(private projectConfig: IResolvedProjectConfig, private options: IBuildOptions = {}) {
+    if (!this.options.noCache) {
+      this.initPluginCache();
+    }
+
+    this.scriptsPathPattern = `**/*.${projectConfig.compiler.config.fileExtensions.script}`;
+    this.includePathPattern = `**/*.${projectConfig.compiler.config.fileExtensions.include}`;
+    this.assetsPathPattern = `**/*.*`;
   }
 
-  async build(compileOptions: CompileOptions): Promise<void> {
-    logger.info('Building...');
+  async build(): Promise<void> {
+    logger.info('⚒️ Building...');
 
     try {
       await this.buildAssets();
       await this.buildInclude();
 
-      const success = await this.buildScripts(compileOptions);
+      const success = await this.buildScripts();
 
       if (success) {
         logger.success('Build completed successfully!');
       } else {
         logger.error('Build completed with errors!');
       }
-    } catch (err: any) {
-      logger.error('Build failed! Error:', err.message);
-      process.exit(1);
+
+      if (this.pluginsCache) {
+        this.pluginsCache.save(config.cacheFile);
+      }
+    } catch (err: unknown) {
+      throw new CLIError(`Build failed! Error: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
-  async watch(compileOptions: CompileOptions): Promise<void> {
+  async watch(): Promise<void> {
     await this.watchAssets();
-    await this.watchInclude(compileOptions);
-    await this.watchScripts(compileOptions);
+    await this.watchInclude();
+    await this.watchScripts();
   }
 
-  async buildScripts(compileOptions: CompileOptions): Promise<boolean> {
+  async buildScripts(options: { pattern?: string } = {}): Promise<boolean> {
+    const { fileExtensions } = this.projectConfig.compiler.config;
+
     let success = true;
 
-    try {
-      for (const input of this.projectConfig.input.scripts) {
-        await this.buildDir(
-          input.dir,
-          SCRIPTS_PATH_PATTERN,
-          // eslint-disable-next-line @typescript-eslint/no-loop-func
-          async (filePath: string) => {
-            const srcFile = path.relative(input.dir, filePath);
-            const isUpdated = await this.updatePlugin(input.dir, srcFile, {
-              ...compileOptions,
-              dest: input.dest,
-              flat: input.flat,
-              prefix: input.prefix,
-            });
-            success = success && isUpdated;
-          }
-        );
-      }
-    } finally {
-      if (!compileOptions.noCache) {
-        this.pluginCache.save(config.cacheFile);
-      }
+    for (const input of this.projectConfig.input.scripts) {
+      await this.buildDir(
+        input.dir,
+        options.pattern ? path.join('**', options.pattern) : this.scriptsPathPattern,
+        async (filePath: string) => {
+          if (fileExtensions.script !== path.extname(filePath).slice(1)) return;
+          const isUpdated = await this.compileScript(filePath, this.getScriptOptions(filePath));
+          success = success && isUpdated;
+        }
+      );
     }
 
     return success;
@@ -87,9 +87,28 @@ export default class AmxxBuilder {
   async buildInclude(): Promise<void> {
     await this.buildDir(
       this.projectConfig.input.include,
-      INCLUDE_PATH_PATTERN,
-      (filePath: string) => this.updateInclude(filePath)
+      this.includePathPattern,
+      async (filePath: string) => {
+        await this.updateInclude(filePath);
+      }
     );
+  }
+
+  async buildDependents(filePath: string) {
+    if (!this.pluginsCache) return;
+    
+    const { fileExtensions } = this.projectConfig.compiler.config;
+
+    const dependents = this.pluginsCache.getDependents(filePath);
+    for (const srcPath of dependents) {
+      if (fileExtensions.script !== path.extname(srcPath).slice(1)) continue;
+
+      await this.compileScript(srcPath, this.getScriptOptions(srcPath));
+    }
+
+    if (this.pluginsCache) {
+      this.pluginsCache.save(config.cacheFile);
+    }
   }
 
   async buildAssets(): Promise<void> {
@@ -100,39 +119,43 @@ export default class AmxxBuilder {
     for (const assetInput of this.projectConfig.input.assets) {
       await this.buildDir(
         assetInput.dir,
-        ASSETS_PATH_PATTERN,
-        (filePath: string) => this.updateAsset(filePath, assetInput)
-      );
-    }
-  }
-
-  async watchScripts(compileOptions: CompileOptions): Promise<void> {
-    for (const input of this.projectConfig.input.scripts) {
-      await this.watchDir(
-        input.dir,
-        SCRIPTS_PATH_PATTERN,
+        this.assetsPathPattern,
         async (filePath: string) => {
-          const srcFile = path.relative(input.dir, filePath);
-          await this.updatePlugin(input.dir, srcFile, {
-            ...compileOptions,
-            dest: input.dest,
-            flat: input.flat,
-            prefix: input.prefix,
-          });
+          await this.updateAsset(filePath, assetInput);
         }
       );
     }
   }
 
-  async watchInclude(compileOptions: CompileOptions): Promise<void> {
+  async watchScripts(): Promise<void> {
+    for (const input of this.projectConfig.input.scripts) {
+      await this.watchDir(
+        input.dir,
+        this.scriptsPathPattern,
+        async (filePath: string) => {
+          await this.compileScript(filePath, input);
+
+          if (this.pluginsCache) {
+            this.pluginsCache.save(config.cacheFile);
+          }
+        }
+      );
+    }
+  }
+
+  async watchInclude(): Promise<void> {
     await this.watchDir(
       this.projectConfig.input.include,
-      INCLUDE_PATH_PATTERN,
+      this.includePathPattern,
       async (filePath: string) => {
-        await this.updateInclude(filePath);
+        const isChanged = await this.updateInclude(filePath);
 
-        if (!compileOptions.noCache) {
-          await this.pluginCache.updateProjectIncludes(this.projectConfig.input.include);
+        if (isChanged) {
+          await this.buildDependents(filePath);
+        }
+
+        if (this.pluginsCache) {
+          this.pluginsCache.save(config.cacheFile);
         }
       }
     );
@@ -146,109 +169,115 @@ export default class AmxxBuilder {
     for (const assetInput of this.projectConfig.input.assets) {
       await this.watchDir(
         assetInput.dir,
-        ASSETS_PATH_PATTERN,
-        (filePath: string) => this.updateAsset(filePath, assetInput)
+        this.assetsPathPattern,
+        async (filePath: string) => {
+          await this.updateAsset(filePath, assetInput);
+        }
       );
     }
   }
 
-  async updatePlugin(
-    srcDir: string,
-    srcFile: string,
-    compileOptions: CompileOptions
-  ): Promise<boolean> {
+  async updateScript(srcPath: string): Promise<boolean> {
+    if (this.pluginsCache) {
+      const isChanged = await this.pluginsCache.updateSrc(srcPath);
+      if (!isChanged) return false;
+    }
+
+    if (this.projectConfig.output.scripts) {
+      const destPath = path.join(this.projectConfig.output.scripts, path.parse(srcPath).base);
+
+      await mkdirp(this.projectConfig.output.scripts);
+      await copyFile(srcPath, destPath);
+
+      logger.info('📄 Script updated:', normalizePath(destPath));
+    }
+
+    return true;
+  }
+
+  async updateAsset(filePath: string, assetInput: IAssetInput): Promise<boolean> {
+    const srcFile = path.relative(assetInput.dir, filePath);
+    if (assetInput.filter) {
+      if (!this.execPathFilter(srcFile, assetInput.filter)) return false;
+    }
+
+    if (this.pluginsCache) {
+      const isChanged = await this.pluginsCache.updateFile(filePath);
+      if (!isChanged) return false;
+    }
+
+    if (this.projectConfig.output.assets) {    
+      const destPath = path.join(this.projectConfig.output.assets, assetInput.dest || '', srcFile);
+      await mkdirp(path.parse(destPath).dir);
+      await copyFile(filePath, destPath);
+      logger.info('🧸 Asset updated:', normalizePath(destPath));
+    }
+
+    return true;
+  }
+
+  async updateInclude(filePath: string): Promise<boolean> {
+    if (this.pluginsCache) {
+      const isChanged = await this.pluginsCache.updateSrc(filePath);
+      if (!isChanged) return false;
+    }
+
+    if (this.projectConfig.output.include) {
+      const destPath = path.join(this.projectConfig.output.include, path.parse(filePath).base);
+
+      await mkdirp(this.projectConfig.output.include);
+      await copyFile(filePath, destPath);
+
+      logger.info('📄 Include updated:', normalizePath(destPath));
+    }
+
+    return true;
+  }
+
+  async compileScript(filePath: string, options: IScriptInput): Promise<boolean> {
+    const srcPath = path.join(options.dir, path.relative(options.dir, filePath));
+
     try {
-      await this.compilePlugin(srcDir, srcFile, compileOptions);
+      const bUpdated = await this.executeCompiler(srcPath, options);
+
+      if (bUpdated) {
+        await this.updateScript(srcPath);
+      }
     } catch (err) {
-      if (!compileOptions.ignoreErrors) {
+      if (!this.options.ignoreErrors) {
         throw err;
       }
 
       return false;
     }
 
-    await this.updateScript(srcDir, srcFile);
-
     return true;
   }
 
-  async updateScript(srcDir: string, srcFile: string): Promise<void> {
-    if (!this.projectConfig.output.scripts) {
-      return;
-    }
+  async executeCompiler(srcPath: string, options: IScriptInput): Promise<boolean> {
+    if (!this.projectConfig.output.plugins) return false;
 
-    const srcPath = path.join(srcDir, srcFile);
-    const destPath = path.join(this.projectConfig.output.scripts, path.parse(srcFile).base);
-
-    await mkdirp(this.projectConfig.output.scripts);
-    await copyFile(srcPath, destPath);
-    logger.info('Script updated:', normalizePath(destPath));
-  }
-
-  async updateAsset(filePath: string, assetInput: IAssetInput): Promise<void> {
-    if (!this.projectConfig.output.assets) {
-      return;
-    }
-
-    const srcFile = path.relative(assetInput.dir, filePath);
-
-    if (assetInput.filter && !this.execPathFilter(srcFile, assetInput.filter)) {
-      return;
-    }
-
-    const destPath = path.join(this.projectConfig.output.assets, assetInput.dest || '', srcFile);
-    await mkdirp(path.parse(destPath).dir);
-    await copyFile(filePath, destPath);
-    logger.info('Asset updated:', normalizePath(destPath));
-  }
-
-  async updateInclude(filePath: string): Promise<void> {
-    if (!this.projectConfig.output.include) {
-      return;
-    }
-
-    const destPath = path.join(this.projectConfig.output.include, path.parse(filePath).base);
-
-    await mkdirp(this.projectConfig.output.include);
-    await copyFile(filePath, destPath);
-    logger.info('Include updated:', normalizePath(destPath));
-  }
-
-  async findPlugins(pattern: string): Promise<string[]> {
-    const pathPattern = map(this.projectConfig.input.scripts, (input) => path.join(input.dir, '**', pattern));
-    const matches = await globule.find(pathPattern, { nodir: true });
-
-    return matches.filter((filePath) => path.extname(filePath) === '.sma');
-  }
-
-  async compilePlugin(
-    srcDir: string,
-    srcFile: string,
-    compileOptions: CompileOptions = {}
-  ): Promise<void> {
-    if (!this.projectConfig.output.plugins) {
-      return;
-    }
-
-    const srcPath = path.join(srcDir, srcFile);
-    const { name: scriptName, dir: srcNestedDir } = path.parse(srcFile);
+    const { name: scriptName, dir: scriptDir } = path.parse(srcPath);
+    const srcNestedDir = path.relative(options.dir, scriptDir);
+    const relateiveSrcPath = path.relative(process.cwd(), srcPath);
+    const { fileExtensions } = this.projectConfig.compiler.config;
 
     const destDir = path.join(
       this.projectConfig.output.plugins,
-      compileOptions.dest || '',
-      (compileOptions.flat ?? this.projectConfig.rules.flatCompilation) ? '.' : srcNestedDir
+      options.dest || '',
+      (options.flat ?? this.projectConfig.rules.flatCompilation) ? '.' : srcNestedDir
     );
 
-    const pluginDest = path.join(destDir, `${compileOptions.prefix || ''}${scriptName}.amxx`);
-    const isUpdated = compileOptions.noCache
-      ? false
-      : await this.pluginCache.isPluginUpdated(srcPath, pluginDest);
+    const pluginDestPath = path.join(destDir, `${options.prefix || ''}${scriptName}.${fileExtensions.plugin}`);
 
-    const relateiveSrcPath = path.relative(process.cwd(), srcPath);
+    if (this.pluginsCache) {
+      const isRelevantScript = await this.pluginsCache.isRelevantSrc(srcPath);
+      const isRelevantPlugin = await this.pluginsCache.isRelevantPlugin(pluginDestPath);
 
-    if (isUpdated) {
-      logger.info('Script is already up to date:', normalizePath(relateiveSrcPath), 'Skipped!');
-      return;
+      if (isRelevantScript && isRelevantPlugin) {
+        logger.info('📄 Script is already up to date:', normalizePath(relateiveSrcPath), 'Skipped!');
+        return false;
+      }
     }
 
     const executablePath = path.join(
@@ -258,9 +287,9 @@ export default class AmxxBuilder {
 
     await mkdirp(destDir);
 
-    const result = await amxxpc({
+    const result = await compiler({
       path: srcPath,
-      dest: pluginDest,
+      dest: pluginDestPath,
       compiler: executablePath,
       includeDir: [
         path.join(this.projectConfig.compiler.dir, 'include'),
@@ -274,11 +303,11 @@ export default class AmxxBuilder {
       ]
     });
 
-    if (!compileOptions.noCache) {
+    if (this.pluginsCache) {
       if (!result.error) {
-        await this.pluginCache.updatePlugin(srcPath, pluginDest);
+        await this.pluginsCache.updateFile(pluginDestPath);
       } else {
-        await this.pluginCache.deletePlugin(srcPath);
+        await this.pluginsCache.deleteFile(pluginDestPath);
       }
     }
 
@@ -296,19 +325,19 @@ export default class AmxxBuilder {
     });
 
     if (result.success) {
-      const destPath = path.join(destDir, result.plugin);
-      const relativeFilePath = path.relative(process.cwd(), srcPath);
-      logger.success('Script compiled successfully:', normalizePath(relativeFilePath));
-      logger.info('Plugin updated:', normalizePath(destPath));
+      logger.success('Script compiled successfully:', normalizePath(relateiveSrcPath));
+      logger.info('🧩 Plugin updated:', normalizePath(pluginDestPath));
     } else {
-      throw new Error(`Failed to compile ${normalizePath(relateiveSrcPath)} : "${result.error}"`);
+      throw new CLIError(`Failed to compile ${normalizePath(relateiveSrcPath)} : "${result.error}"`);
     }
+
+    return result.success;
   }
 
   private async buildDir(
     baseDir: string | string[],
     pattern: string,
-    cb: (filePath: string) => any
+    cb: (filePath: string) => Promise<void>
   ): Promise<void> {
     const pathPattern = map(castArray(baseDir), (dir) => path.join(dir, pattern));
     const matches = await globule.find(pathPattern, { nodir: true });
@@ -321,29 +350,59 @@ export default class AmxxBuilder {
   private async watchDir(
     baseDir: string | string[],
     pattern: string,
-    cb: (filePath: string) => any
+    cb: (filePath: string) => Promise<void>
   ): Promise<void> {
-    const pathPattern = map(castArray(baseDir), (dir) => path.join(dir, pattern));
-    const watcher = setupWatch(pathPattern);
+    const watcher = setupWatch(baseDir);
 
     const updateFn = async (filePath: string) => {
-      logger.info('File change detected. Starting incremental compilation...');
+      if (!this.execPathFilter(filePath, pattern)) return;
+
+      logger.info('🔹 File change detected. Starting incremental compilation...');
 
       await cb(path.normalize(filePath)).catch(
         (err: Error) => logger.error(err.message)
       );
 
-      logger.info('Compilation complete. Watching for file changes.');
+      logger.info('🔹 Compilation complete. Watching for file changes.');
     };
 
     watcher.on('add', updateFn);
     watcher.on('change', updateFn);
+    watcher.on('unlink', (filePath: string) => {
+      if (this.pluginsCache) {
+        this.pluginsCache.deleteFile(filePath);
+      }
+    });
   }
 
   private initPluginCache() {
-    this.pluginCache = new PluginsCache(process.cwd());
-    this.pluginCache.load(config.cacheFile);
-    this.pluginCache.updateProjectIncludes(this.projectConfig.input.include);
+    const ignoredIncludes = this.getNativeIncludes();
+
+    this.pluginsCache = new PluginsCache(
+      this.projectConfig.path,
+      this.projectConfig.input.include,
+      this.projectConfig.compiler.config.fileExtensions,
+      ignoredIncludes
+    );
+
+    this.pluginsCache.load(config.cacheFile);
+  }
+
+  private getNativeIncludes(): string[] {
+    const { fileExtensions } = this.projectConfig.compiler.config;
+
+    const ignoredIncludes = [];
+
+    // Ignore includes from project include directories (not the input includes)
+    for (const includeDir of this.projectConfig.include) {
+      for (const include of fs.readdirSync(includeDir)) {
+        const { name, ext } = path.parse(include);
+        if (ext.slice(1) != fileExtensions.include) continue;
+        ignoredIncludes.push(name);
+      }
+    }
+
+    return ignoredIncludes;
   }
 
   private execPathFilter(filePath: string, filter: string | string[]) {
@@ -352,5 +411,15 @@ export default class AmxxBuilder {
       nocase: true,
       matchBase: true
     });
+  }
+
+  private getScriptOptions(srcPath: string): IScriptInput {
+    for (const input of this.projectConfig.input.scripts) {
+      if (this.execPathFilter(srcPath, path.join(input.dir, '**'))) {
+        return input;
+      }
+    }
+
+    return null;
   }
 }

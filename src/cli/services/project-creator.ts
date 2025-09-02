@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs';
 import { exec } from 'child_process';
-import mkdirp from 'mkdirp';
+import { mkdirp } from 'mkdirp';
 import { get, map, merge } from 'lodash';
 
 import ProjectConfig from '../../project-config';
@@ -9,6 +9,8 @@ import { IProjectOptions } from '../types';
 import { IResolvedProjectConfig } from '../../types';
 import config from '../../config';
 import logger from '../../logger/logger';
+import CLIError from '../../common/cli-error';
+// import { CompilerType } from '../../constants';
 
 class ProjectCreator {
   public projectDir: string = null;
@@ -19,11 +21,7 @@ class ProjectCreator {
   constructor(
     options: IProjectOptions = null
   ) {
-    if (options) {
-      if (!options.name) {
-        throw new Error('Project name cannot be empty!');
-      }
-
+    if (options.name) {
       this.isCurrentDir = options.name === '.';
 
       const cwd = options.cwd || process.cwd();
@@ -39,18 +37,16 @@ class ProjectCreator {
         : path.join(cwd, this.options.name);
     }
 
-    this.projectConfig = ProjectConfig.resolve({}, this.projectDir || '');
+    this.projectConfig = ProjectConfig.resolve(options.type, {}, this.projectDir || '');
   }
 
   public async createProject(): Promise<void> {
     if (!this.isCurrentDir && fs.existsSync(this.projectDir)) {
-      logger.error('Project', this.options.name, 'is already exists!');
-      return;
+      throw new CLIError(`Project ${this.options.name} is already exists!`);
     }
 
     if (this.isCurrentDir && this.isInitialized()) {
-      logger.error('Cannot create a project! The directory is not empty!');
-      return;
+      throw new CLIError('Cannot create a project! The directory is not empty!');
     }
 
     await this.createConfig();
@@ -87,16 +83,12 @@ class ProjectCreator {
     };
 
     if (fs.existsSync(packagePath)) {
-      try {
-        merge(
-          packageData,
-          JSON.parse(
-            await fs.promises.readFile(packagePath, 'utf8')
-          )
-        );
-      } catch {
-        logger.error('Cannot read package.json file');
-      }
+      merge(
+        packageData,
+        JSON.parse(
+          await fs.promises.readFile(packagePath, 'utf8')
+        )
+      );
     }
 
     merge(packageData, {
@@ -112,18 +104,11 @@ class ProjectCreator {
 
   public async createConfig() {
     logger.info('🔧 Creating project configuration file...');
+
     await mkdirp(this.projectDir);
     const configPath = path.join(this.projectDir, config.projectConfig);
 
-    const projectConfig = merge({}, ProjectConfig.defaults, {
-      output: {
-        base: './dist',
-        scripts: './addons/amxmodx/scripting',
-        plugins: './addons/amxmodx/plugins',
-        include: './addons/amxmodx/scripting/include',
-        assets: './'
-      },
-    });
+    const projectConfig = merge({}, this.projectConfig.defaults);
 
     await fs.promises.writeFile(configPath, JSON.stringify(projectConfig, null, 2));
   }
@@ -157,7 +142,7 @@ class ProjectCreator {
     logger.info('❔ Updating .gitignore file...');
     const filePath = path.join(this.projectDir, '.gitignore');
 
-    const lines = ['*.amxx'];
+    const lines = [`*.${this.projectConfig.compiler.config.fileExtensions.plugin}`];
 
     const addDir = (dir: string) => !path.isAbsolute(dir) && lines.push(
       `${path.relative(this.projectDir, dir)}/`

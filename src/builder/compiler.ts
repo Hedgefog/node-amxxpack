@@ -1,16 +1,21 @@
 import path from 'path';
 import childProcess from 'child_process';
-import mkdirp from 'mkdirp';
+import { mkdirp } from 'mkdirp';
 
-import accumulator from '../utils/accumulator';
-
-const PLUGIN_EXT = 'amxx';
+import stringAccumulator from '../utils/string-accumulator';
 
 export enum AMXPCMessageType {
   Echo = 'echo',
   Error = 'error',
   Warning = 'warning',
   FatalError = 'fatal error'
+}
+
+interface ICompileParams {
+  path: string;
+  dest: string;
+  compiler: string;
+  includeDir: string[];
 }
 
 interface IMessage {
@@ -108,7 +113,7 @@ function parseOutput(output: string): IParseOutputResult {
   return result;
 }
 
-function formatArgs(params: any, outPath: string) {
+function formatArgs(params: ICompileParams, outPath: string) {
   const includeArgs = params.includeDir instanceof Array
     ? params.includeDir.map((dir: string) => `-i${dir}`)
     : [`-i${params.includeDir}`];
@@ -116,12 +121,8 @@ function formatArgs(params: any, outPath: string) {
   return [params.path, `-o${outPath}`, ...includeArgs];
 }
 
-function compile(params: any): Promise<ICompileResult> {
-  const parsedPath = path.parse(params.path);
-
-  const dest = params.dest.endsWith(`.${PLUGIN_EXT}`)
-    ? params.dest
-    : path.join(params.dest, `${parsedPath.name}.${PLUGIN_EXT}`);
+function compile(params: ICompileParams): Promise<ICompileResult> {
+  const dest = params.dest;
 
   const parsedDest = path.parse(dest);
   const fileName = path.parse(dest).base;
@@ -129,7 +130,7 @@ function compile(params: any): Promise<ICompileResult> {
   mkdirp.sync(parsedDest.dir);
 
   return new Promise((resolve) => {
-    const output = accumulator();
+    const output = stringAccumulator();
 
     const done = (error: Error) => {
       const outputData = output();

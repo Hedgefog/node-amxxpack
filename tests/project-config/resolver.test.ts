@@ -3,14 +3,15 @@ import { isObject, map } from 'lodash';
 
 import { TEST_TMP_DIR } from '../constants';
 import ProjectConfig from '../../src/project-config';
+import config from '../../src/config';
 
 const PROJECT_DIR = TEST_TMP_DIR;
 
 describe('Project Config Resolver', () => {
   it('should resolve undefined paths as defaults', async () => {
-    const defaultConfig = ProjectConfig.resolve({}, PROJECT_DIR);
+    const defaultConfig = ProjectConfig.resolve(config.defaultProjectType,{}, PROJECT_DIR);
 
-    const projectConfig = ProjectConfig.resolve({
+    const projectConfig = ProjectConfig.resolve(config.defaultProjectType, {
       input: {
         scripts: undefined,
         include: undefined,
@@ -31,7 +32,7 @@ describe('Project Config Resolver', () => {
   });
 
   it('should resolve null output paths as null values', async () => {
-    const projectConfig = ProjectConfig.resolve({
+    const projectConfig = ProjectConfig.resolve(config.defaultProjectType, {
       output: {
         scripts: null,
         plugins: null,
@@ -47,13 +48,14 @@ describe('Project Config Resolver', () => {
   });
 
   it('should resolve empty paths as project root', async () => {
-    const projectConfig = ProjectConfig.resolve({
+    const projectConfig = ProjectConfig.resolve(config.defaultProjectType, {
       input: {
         scripts: '',
         include: '',
         assets: '',
       },
       output: {
+        base: '',
         scripts: '',
         plugins: '',
         include: '',
@@ -87,17 +89,18 @@ describe('Project Config Resolver', () => {
         assets: path.resolve(PROJECT_DIR, 'assets'),
       },
       output: {
-        scripts: path.resolve(PROJECT_DIR, 'out/scripts'),
-        plugins: path.resolve(PROJECT_DIR, 'out/plugins'),
-        include: path.resolve(PROJECT_DIR, 'out/include'),
-        assets: path.resolve(PROJECT_DIR, 'out/assets')
+        base: path.resolve(PROJECT_DIR, 'out'),
+        scripts: path.resolve(PROJECT_DIR, 'scripts'),
+        plugins: path.resolve(PROJECT_DIR, 'plugins'),
+        include: path.resolve(PROJECT_DIR, 'include'),
+        assets: path.resolve(PROJECT_DIR, 'assets')
       },
       compiler: { dir: path.resolve(PROJECT_DIR, 'compiler') },
       thirdparty: { dir: path.resolve(PROJECT_DIR, 'thirdparty') },
       include: [path.resolve(PROJECT_DIR, 'extra-include')]
     };
 
-    const projectConfig = ProjectConfig.resolve(overrides);
+    const projectConfig = ProjectConfig.resolve(config.defaultProjectType, overrides);
 
     expect(projectConfig.input.scripts).toEqual(map(overrides.input.scripts, (script) => isObject(script) ? script : { dir: script }));
     expect(projectConfig.input.include).toEqual([overrides.input.include]);
@@ -122,6 +125,7 @@ describe('Project Config Resolver', () => {
         assets: 'assets',
       },
       output: {
+        base: '',
         scripts: 'out/scripts',
         plugins: 'out/plugins',
         include: 'out/include',
@@ -134,7 +138,7 @@ describe('Project Config Resolver', () => {
 
     const resolvePath = (p: string) => path.resolve(PROJECT_DIR, p);
 
-    const projectConfig = ProjectConfig.resolve(overrides, PROJECT_DIR);
+    const projectConfig = ProjectConfig.resolve(config.defaultProjectType, overrides, PROJECT_DIR);
 
     expect(projectConfig.input.scripts).toEqual(map(overrides.input.scripts, (script) => ({ dir: resolvePath(isObject(script) ? script.dir : script) })));
     expect(projectConfig.input.include).toEqual([resolvePath(overrides.input.include)]);
@@ -161,7 +165,7 @@ describe('Project Config Resolver', () => {
       }
     };
 
-    const projectConfig = ProjectConfig.resolve(overrides, PROJECT_DIR);
+    const projectConfig = ProjectConfig.resolve(config.defaultProjectType, overrides, PROJECT_DIR);
 
     const resolveOutPath = (p: string) => path.resolve(PROJECT_DIR, outputBaseDir, p);
 
@@ -174,7 +178,7 @@ describe('Project Config Resolver', () => {
   it('should resolve out paths with null values using base dir', async () => {
     const outputBaseDir = './out';
 
-    const projectConfig = ProjectConfig.resolve({
+    const projectConfig = ProjectConfig.resolve(config.defaultProjectType, {
       output: {
         base: outputBaseDir,
         scripts: null,
@@ -194,7 +198,7 @@ describe('Project Config Resolver', () => {
     const outputBaseDir = './out';
     const outputAbsBaseDir = path.resolve(PROJECT_DIR, outputBaseDir);
 
-    const projectConfig = ProjectConfig.resolve({
+    const projectConfig = ProjectConfig.resolve(config.defaultProjectType, {
       output: {
         base: outputBaseDir,
         scripts: '',

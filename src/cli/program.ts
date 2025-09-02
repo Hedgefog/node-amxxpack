@@ -2,8 +2,10 @@
 
 import { Command } from 'commander';
 
-import config from '../config';
 import controller from './controller';
+import commandAction from './helpers/command-action';
+import config from '../config';
+import { FileType } from './constants';
 
 const program = new Command();
 
@@ -11,38 +13,48 @@ program
   .name('AMXXPack CLI')
   .description('Simple AmxModX CLI');
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 program.version(require('../../package.json').version);
 
 program
   .command('create')
   .argument('<name>', 'Project name')
+  .option('--type, -t <type>', 'Project type', config.defaultProjectType)
   .option('--version, -v <version>', 'Project version')
   .option('--author, -a <author>', 'Project author')
   .option('--description, -d <author>', 'Project description')
   .option('--nonpm', 'Don\'t initialize npm package', false)
   .option('--git', 'Initialize git', false)
-  .action(async (name: string, options: any) => {
-    const { V: version, A: author, D: description, nonpm, git } = options;
-    await controller.create({ name, version, author, description, nonpm, git });
-  });
+  .action(
+    commandAction(async (name: string, options) => {
+      const { version, author, description, nonpm, git, type } = options;
+      await controller.create({ name, version, author, description, nonpm, git, type });
+    })
+  );
 
 program
   .command('config')
-  .action(async () => {
-    const projectDir = process.cwd();
-    await controller.config(projectDir);
-  });
+  .option('--type, -t <type>', 'Project type', config.defaultProjectType)
+  .action(
+    commandAction(async (options) => {
+      const { type } = options;
+      const projectDir = process.cwd();
+      await controller.config(projectDir, type);
+    })
+  );
 
 program
   .command('compile')
   .alias('c')
-  .argument('<path>', 'Script path or glob')
+  .argument('<pattern>', 'Script path or glob')
   .option('--config, -c <path>', 'Config file', config.projectConfig)
   .option('--no-cache', 'Disable caching')
-  .action(async (filePath: string, options: any) => {
-    const { C: configPath, cache } = options;
-    await controller.compile(filePath, configPath, { noCache: !cache });
-  });
+  .action(
+    commandAction(async (pattern: string, options) => {
+      const { config: configPath, cache } = options;
+      await controller.compile(pattern, configPath, { noCache: !cache });
+    })
+  );
 
 program
   .command('build')
@@ -51,10 +63,12 @@ program
   .option('--watch, -w', 'Watch project')
   .option('--ignore, -i', 'Ignore build errors')
   .option('--no-cache', 'Disable caching')
-  .action(async (_argument: string, options: any) => {
-    const { C: configPath, W: watch, I: ignoreErrors, cache } = options.opts();
-    await controller.build(configPath, { watch, ignoreErrors, noCache: !cache });
-  });
+  .action(
+    commandAction(async (_argument: string, options) => {
+      const { config: configPath, watch, ignore: ignoreErrors, cache } = options.opts();
+      await controller.build(configPath, { watch, ignoreErrors, noCache: !cache });
+    })
+  );
 
 program
   .command('install')
@@ -62,25 +76,29 @@ program
   .option('--config, -c <path>', 'Config file', config.projectConfig)
   .option('--compiler', 'Install compiler')
   .option('--thirdparty', 'Install thirdparty dependencies')
-  .action(async (_argument: string, options: any) => {
-    const { C: configPath, compiler, thirdparty } = options.opts();
-
-    const fullInstall = !compiler && !thirdparty;
-
-    await controller.install(
-      configPath,
-      {
-        compiler: fullInstall || !!compiler,
-        thirdparty: fullInstall || !!thirdparty
-      }
-    );
-  });
+  .action(
+    commandAction(async (_argument: string, options) => {
+      const { config: configPath, compiler, thirdparty } = options.opts();
+  
+      const fullInstall = !compiler && !thirdparty;
+  
+      await controller.install(
+        configPath,
+        {
+          compiler: fullInstall || !!compiler,
+          thirdparty: fullInstall || !!thirdparty
+        }
+      );
+    })
+  );
 
 program
   .command('cache clean')
-  .action(async () => {
-    await controller.cleanCache();
-  });
+  .action(
+    commandAction(async () => {
+      await controller.cleanCache();
+    })
+  );
 
 program
   .command('generate')
@@ -95,22 +113,21 @@ program
   .option('--library, -l <library>', 'Library name')
   .option('--include, -i <include>', 'Add include')
   .option('--overwrite', 'Overwrite file if it already exists', false)
-  .action(async (type: string, fileName: string, options: any) => {
-    const { C: configPath, N: name, V: version, A: author, L: library, overwrite } = options;
-
-    const include = options.I ? options.I.split(/[\s|,]/) : [];
-    if (!include.includes('amxmodx')) {
-      include.unshift('amxmodx');
-    }
-
-    await controller.add(configPath, type, fileName, {
-      name,
-      version,
-      author,
-      library,
-      include,
-      overwrite
-    });
-  });
+  .action(
+    commandAction(async (type: FileType, fileName: string, options) => {
+      const { config: configPath, name, version, author, library, overwrite } = options;
+  
+      const include = options.include ? options.include.split(/[\s|,]/) : [];
+  
+      await controller.add(configPath, type, fileName, {
+        name,
+        version,
+        author,
+        library,
+        include,
+        overwrite
+      });
+    })
+  );
 
 export default program;

@@ -1,6 +1,6 @@
 import path from 'path';
 import fs from 'fs';
-import mkdirp from 'mkdirp';
+import { mkdirp } from 'mkdirp';
 import rimraf from 'rimraf';
 
 import ProjectCreator from '../../src/cli/services/project-creator';
@@ -45,7 +45,7 @@ describe('Project Creator', () => {
   it('should initialize project', async () => {
     const testProject = createProject(TEST_DIR);
 
-    const projectCreator = new ProjectCreator({ ...testProject.projectOptions });
+    const projectCreator = new ProjectCreator({ type: config.defaultProjectType, ...testProject.projectOptions });
 
     await projectCreator.createProject();
     expect(projectCreator.createDirectories).toBeCalled();
@@ -72,7 +72,7 @@ describe('Project Creator', () => {
 
   it('should merge package', async () => {
     const testProject = createProject(TEST_DIR);
-    const projectCreator = new ProjectCreator({ ...testProject.projectOptions, git: true });
+    const projectCreator = new ProjectCreator({ type: config.defaultProjectType, ...testProject.projectOptions, git: true });
 
     await projectCreator.createProject();
     expect(projectCreator.initGit).toBeCalled();
@@ -82,7 +82,7 @@ describe('Project Creator', () => {
 
   it('should initialize git on project create', async () => {
     const testProject = createProject(TEST_DIR);
-    const projectCreator = new ProjectCreator({ ...testProject.projectOptions, git: true });
+    const projectCreator = new ProjectCreator({ type: config.defaultProjectType, ...testProject.projectOptions, git: true });
 
     await projectCreator.createProject();
     expect(projectCreator.initGit).toBeCalled();
@@ -98,6 +98,7 @@ describe('Project Creator', () => {
     ]);
 
     const projectCreator = new ProjectCreator({
+      type: config.defaultProjectType,
       ...testProject.projectOptions,
       name: '.',
       git: true,
@@ -112,7 +113,7 @@ describe('Project Creator', () => {
 
   it('should not initialize git on project create', async () => {
     const testProject = createProject(TEST_DIR);
-    const projectCreator = new ProjectCreator({ ...testProject.projectOptions });
+    const projectCreator = new ProjectCreator({ type: config.defaultProjectType, ...testProject.projectOptions });
 
     await projectCreator.createProject();
     expect(projectCreator.initGit).not.toBeCalled();
@@ -121,7 +122,7 @@ describe('Project Creator', () => {
 
   it('should not initialize npm package on project create', async () => {
     const testProject = createProject(TEST_DIR);
-    const projectCreator = new ProjectCreator({ ...testProject.projectOptions, nonpm: true });
+    const projectCreator = new ProjectCreator({ type: config.defaultProjectType, ...testProject.projectOptions, nonpm: true });
 
     await projectCreator.createProject();
     expect(projectCreator.updatePackage).not.toBeCalled();
@@ -130,7 +131,7 @@ describe('Project Creator', () => {
 
   it('should initialize npm package on project create', async () => {
     const testProject = createProject(TEST_DIR);
-    const projectCreator = new ProjectCreator({ ...testProject.projectOptions });
+    const projectCreator = new ProjectCreator({ type: config.defaultProjectType, ...testProject.projectOptions });
 
     await projectCreator.createProject();
     expect(projectCreator.updatePackage).toBeCalled();

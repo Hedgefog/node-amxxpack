@@ -1,6 +1,7 @@
 import path from 'path';
 import _download from 'download';
-import mkdirp from 'mkdirp';
+import { mkdirp } from 'mkdirp';
+import logger from '../logger/logger';
 
 interface IDownloadResult {
   url: string;
@@ -8,6 +9,8 @@ interface IDownloadResult {
 }
 
 async function download(url: string, filePath: string): Promise<IDownloadResult> {
+  logger.debug(`Downloading file from from "${url}" to "${filePath}"`);
+
   const { dir, base: filename } = path.parse(filePath);
   await mkdirp(dir);
   await _download(url, dir, { filename });

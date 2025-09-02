@@ -1,10 +1,12 @@
+import { ICompilerConfig } from "../project-config/types";
+
 export interface IAssetInput {
   dir: string;
   dest?: string;
   filter?: string | string[];
 }
 
-export interface ScriptInput {
+export interface IScriptInput {
   dir: string;
   dest?: string;
   prefix?: string;
@@ -19,8 +21,9 @@ export interface IDependency {
 }
 
 export interface IProjectConfig {
+  type?: string;
   input: {
-    scripts: null | string | IAssetInput | (string | ScriptInput)[];
+    scripts: null | string | IAssetInput | (string | IScriptInput)[];
     include: null | string | string[];
     assets: null | string | IAssetInput | (string | IAssetInput)[];
   };
@@ -34,7 +37,7 @@ export interface IProjectConfig {
   compiler: {
     dir: null | string;
     version: string;
-    addons: [];
+    addons: string[];
     dev: boolean;
     executable: string;
   };
@@ -61,8 +64,11 @@ export interface IProjectConfig {
 }
 
 export interface IResolvedProjectConfig extends IProjectConfig {
+  path: string;
+  type: string;
+  defaults: IProjectConfig;
   input: {
-    scripts: ScriptInput[];
+    scripts: IScriptInput[];
     include: string[];
     assets: IAssetInput[];
   };
@@ -75,6 +81,7 @@ export interface IResolvedProjectConfig extends IProjectConfig {
   include: string[];
   compiler: IProjectConfig['compiler'] & {
     dir: string;
+    config: ICompilerConfig;
   };
   thirdparty: IProjectConfig['thirdparty'] & {
     dir: string;

@@ -1,0 +1,21 @@
+{
+  "executable": "amxxpc",
+  "defaultVersion": "1.8.2",
+  "addonName": "amxmodx",
+  "fileExtensions": {
+    "script": "sma",
+    "include": "inc",
+    "plugin": "amxx"
+  },
+  "cli": {
+    "defaultIncludes": ["amxmodx"],
+    "templateDir": "amxmodx"
+  },
+  "downloader": {
+    "downloadHost": "https://www.amxmodx.org",
+    "useMetaFile": false,
+    "baseDist": "base",
+    "distSource": "release",
+    "compilerDir": "addons/amxmodx/scripting"
+  }
+}
