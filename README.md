@@ -38,12 +38,12 @@ This system will be useful for projects with multiple plugins and assets. Using 
 **AMXXPack** is available through the npm registry.
 Installation can be done using the `npm i amxxpack@1.5.0-beta.2` command:
 ```
-npm install amxxpack
+npm install amxxpack@1.5.0-beta.2
 ```
 
 or install it globally to use as a system command
 ```
-npm install -g amxxpack
+npm install -g amxxpack@1.5.0-beta.2
 ```
 
 ---
