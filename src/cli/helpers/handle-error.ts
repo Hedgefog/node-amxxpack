@@ -8,6 +8,10 @@ export default function handleError(err: unknown) {
         logger.info('Use `amxxpack --help` to see all available commands');
         break;
       }
+      case 'commander.version': {
+        logger.info(`AMXXPack v${err.message}`);
+        break;
+      }
       default: {
         logger.error(err.message);
         break;
