@@ -96,6 +96,7 @@ export default class AmxxBuilder {
 
   async rebuildDependents(filePath: string) {
     if (!this.pluginsCache) return;
+    if (!this.projectConfig.rules.rebuildDependents) return;
     
     const { fileExtensions } = this.projectConfig.compiler.config;
 

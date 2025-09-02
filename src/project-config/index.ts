@@ -45,7 +45,8 @@ function resolveDefaults(type: string, compilerConfig: ICompilerConfig): IProjec
     },
     include: [],
     rules: {
-      flatCompilation: true
+      flatCompilation: true,
+      rebuildDependents: true
     },
     cli: {
       templates: {
@@ -110,6 +111,10 @@ function resolve(type: string, overrides: PartialDeep<IProjectConfig>, projectDi
           strip: dependency.strip || 0
         })
       )
+    },
+    rules: {
+      flatCompilation: projectConfig.rules.flatCompilation ?? true,
+      rebuildDependents: projectConfig.rules.rebuildDependents ?? true
     }
   });
 }

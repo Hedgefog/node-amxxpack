@@ -47,7 +47,8 @@ export interface IProjectConfig {
   };
   include: null | string[];
   rules: {
-    flatCompilation: boolean;
+    flatCompilation?: boolean;
+    rebuildDependents?: boolean;
   };
   cli: {
     templates: {
@@ -88,5 +89,9 @@ export interface IResolvedProjectConfig extends IProjectConfig {
     dependencies: (IDependency & {
       strip: number;
     })[]
+  };
+  rules: {
+    flatCompilation: boolean;
+    rebuildDependents: boolean;
   };
 }
