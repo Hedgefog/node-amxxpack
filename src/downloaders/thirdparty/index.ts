@@ -33,7 +33,10 @@ export default class ThirdpartyDownloader {
     const outDir = path.join(this.projectConfig.path, this.projectConfig.thirdparty.dir, dependency.name);
     await mkdirp(outDir);
 
-    if (SUPPORTED_ARCHIVES.includes(path.extname(fileName).slice(1))) {
+    if (
+      dependency.type === 'archive' ||
+      SUPPORTED_ARCHIVES.includes(path.extname(fileName).slice(1))
+    ) {
       logger.info(`📤 Extracting "${dependency.name}" thirdparty...`);
 
       await decompress(filePath, outDir, {

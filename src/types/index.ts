@@ -18,6 +18,7 @@ export interface IDependency {
   url: string;
   strip?: number;
   filter?: string | string[];
+  type?: 'file' | 'archive';
 }
 
 export interface IProjectConfig {
