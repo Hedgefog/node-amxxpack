@@ -192,8 +192,8 @@ describe('Plugins Cache', () => {
     const pluginPath = path.join(TEST_DIR, 'test.amxx');
 
     const nodeCache = new NodeCache();
-    nodeCache.set(pluginCache.getFileCacheKey(srcPath, CacheValueType.FileHash), 'src-hash');
-    nodeCache.set(pluginCache.getFileCacheKey(pluginPath, CacheValueType.FileHash), 'plugin-hash');
+    nodeCache.set(pluginCache.getFileCacheKey(srcPath, CacheValueType.Hash), 'src-hash');
+    nodeCache.set(pluginCache.getFileCacheKey(pluginPath, CacheValueType.Hash), 'plugin-hash');
     await fs.promises.writeFile(cacheFilePath, JSON.stringify(nodeCache.data));
 
     pluginCache.load(cacheFilePath);
@@ -206,8 +206,8 @@ describe('Plugins Cache', () => {
     const pluginPath = path.join(TEST_DIR, 'test.amxx');
 
     const nodeCache = new NodeCache();
-    nodeCache.set(pluginCache.getFileCacheKey(srcPath, CacheValueType.FileHash), 'src-hash');
-    nodeCache.set(pluginCache.getFileCacheKey(pluginPath, CacheValueType.FileHash), 'plugin-hash');
+    nodeCache.set(pluginCache.getFileCacheKey(srcPath, CacheValueType.Hash), 'src-hash');
+    nodeCache.set(pluginCache.getFileCacheKey(pluginPath, CacheValueType.Hash), 'plugin-hash');
     await fs.promises.writeFile(cacheFilePath, JSON.stringify(nodeCache.data));
 
     pluginCache['cache'].data = nodeCache.data;
@@ -217,5 +217,47 @@ describe('Plugins Cache', () => {
     const cacheData = JSON.parse(cacheFileContent);
 
     expect(cacheData).toMatchObject(nodeCache.data);
+  });
+
+  it('should correctly save states in cache file', async () => {
+    const cacheFilePath = path.join(TEST_DIR, 'cache.json');
+
+    const srcPath = path.join(TEST_DIR, 'test.sma');
+
+    await fs.promises.writeFile(srcPath, 'src-content');
+
+    await pluginCache.updateSrc(srcPath);
+
+    const reloadCache = () => {
+      pluginCache.save(cacheFilePath);
+      pluginCache.clear();
+      pluginCache.load(cacheFilePath);
+    };
+
+    expect(await pluginCache.isRelevantSrc(srcPath)).toBe(true);
+
+    reloadCache();
+
+    expect(await pluginCache.isRelevantSrc(srcPath)).toBe(true);
+
+    await fs.promises.writeFile(srcPath, 'src-content-changed');
+
+    expect(await pluginCache.isRelevantSrc(srcPath)).toBe(false);
+
+    reloadCache();
+
+    expect(await pluginCache.isRelevantSrc(srcPath)).toBe(false);
+
+    await pluginCache.updateSrc(srcPath);
+
+    reloadCache();
+
+    expect(await pluginCache.isRelevantSrc(srcPath)).toBe(true);
+
+    await fs.promises.writeFile(srcPath, 'src-content-changed2');
+
+    reloadCache();
+
+    expect(await pluginCache.isRelevantSrc(srcPath)).toBe(false);
   });
 });

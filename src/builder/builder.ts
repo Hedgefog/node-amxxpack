@@ -94,7 +94,7 @@ export default class AmxxBuilder {
     );
   }
 
-  async buildDependents(filePath: string) {
+  async rebuildDependents(filePath: string) {
     if (!this.pluginsCache) return;
     
     const { fileExtensions } = this.projectConfig.compiler.config;
@@ -151,7 +151,7 @@ export default class AmxxBuilder {
         const isChanged = await this.updateInclude(filePath);
 
         if (isChanged) {
-          await this.buildDependents(filePath);
+          await this.rebuildDependents(filePath);
         }
 
         if (this.pluginsCache) {

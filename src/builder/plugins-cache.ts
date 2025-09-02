@@ -14,7 +14,7 @@ export interface IDependencies {
 }
 
 export enum CacheValueType {
-  FileHash = 'hash',
+  Hash = 'hash',
   Dependencies = 'dependencies',
   DependenciesHash = 'dependencies-hash',
   Dependents = 'dependents'
@@ -34,6 +34,10 @@ export default class PluginsCache {
     this.ignoredIncludesSet = new Set(ignoredIncludes);
   }
 
+  public clear() {
+    this.cache.data = {};
+  }
+
   public save(cacheFile: string) {
     fs.writeFileSync(cacheFile, JSON.stringify(this.cache.data));
   }
@@ -48,7 +52,7 @@ export default class PluginsCache {
   }
 
   public async isRelevantSrc(srcPath: string): Promise<boolean> {
-    const srcCachedHash = this.cache.get(this.getFileCacheKey(srcPath, CacheValueType.FileHash));
+    const srcCachedHash = this.cache.get(this.getFileCacheKey(srcPath, CacheValueType.Hash));
     if (!srcCachedHash) return false;
 
     const srcHash = await this.createFileHash(srcPath);
@@ -56,7 +60,7 @@ export default class PluginsCache {
 
     const dependencies = await this.getDependencies(srcPath);
     const dependenciesHash = await this.getFilesHash(dependencies.items);
-    if (dependenciesHash !== dependencies.hash) return false;
+    if (dependencies.hash !== dependenciesHash) return false;
 
     return true;
   }
@@ -65,24 +69,22 @@ export default class PluginsCache {
     const pluginHash = await this.createFileHash(pluginPath);
     if (!pluginHash) return false;
 
-    const pluginCachedHash = this.cache.get(this.getFileCacheKey(pluginPath, CacheValueType.FileHash));
+    const pluginCachedHash = this.cache.get(this.getFileCacheKey(pluginPath, CacheValueType.Hash));
     if (pluginHash !== pluginCachedHash) return false;
 
     return true;
   }
 
   public async updateSrc(srcPath: string): Promise<boolean> {
-    const oldHash = this.cache.get(this.getFileCacheKey(srcPath, CacheValueType.FileHash));
+    const oldHash = this.cache.get(this.getFileCacheKey(srcPath, CacheValueType.Hash));
     const hash = await this.updateFileHash(srcPath);
-    if (oldHash == hash) return false;
+    const isDependenciesChanged = await this.updateDependencies(srcPath);
 
-    await this.updateDependencies(srcPath);
-
-    return true;
+    return oldHash !== hash || isDependenciesChanged;
   }
   
   public async updateFile(filePath: string): Promise<boolean> {
-    const oldHash = this.cache.get(this.getFileCacheKey(filePath, CacheValueType.FileHash));
+    const oldHash = this.cache.get(this.getFileCacheKey(filePath, CacheValueType.Hash));
     const hash = await this.updateFileHash(filePath);
 
     return oldHash !== hash;
@@ -232,7 +234,7 @@ export default class PluginsCache {
     const hashSum = crypto.createHash('sha256');
 
     for (const filePath of paths) {
-      const cacheKey = this.getFileCacheKey(filePath, CacheValueType.FileHash);
+      const cacheKey = this.getFileCacheKey(filePath, CacheValueType.Hash);
 
       const hash: string = (
         this.cache.has(cacheKey)
@@ -249,7 +251,7 @@ export default class PluginsCache {
   private async updateFileHash(filePath: string): Promise<string> {
     const hash = await this.createFileHash(filePath);
 
-    this.cache.set(this.getFileCacheKey(filePath, CacheValueType.FileHash), hash);
+    this.cache.set(this.getFileCacheKey(filePath, CacheValueType.Hash), hash);
 
     return hash;
   }
