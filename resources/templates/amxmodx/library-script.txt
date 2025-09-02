@@ -1,4 +1,7 @@
+#pragma semicolon 1
+
 {{INCLUDES}}
+
 #include <{{INCLUDE_NAME}}>
 
 public plugin_init() {
