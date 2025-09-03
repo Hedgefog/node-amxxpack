@@ -2,11 +2,11 @@ import path from 'path';
 import { mkdirp } from 'mkdirp';
 import globule from 'globule';
 import normalizePath from 'normalize-path';
-import { castArray, map } from 'lodash';
+import { castArray, isArray, map } from 'lodash';
 import fs from 'fs';
 
 import compiler, { AMXPCMessageType } from './compiler';
-import { IAssetInput, IResolvedProjectConfig, IScriptInput } from '../types';
+import { IAssetInput, IInput, IResolvedProjectConfig, IScriptInput } from '../types';
 import logger from '../logger/logger';
 import Cache from './cache';
 import copyFile from '../utils/copy-file';
@@ -75,7 +75,7 @@ export default class AmxxBuilder {
         options.pattern ? path.join('**', options.pattern) : this.scriptsPathPattern,
         async (filePath: string) => {
           if (fileExtensions.script !== path.extname(filePath).slice(1)) return;
-          const isUpdated = await this.compileScript(filePath, this.getScriptOptions(filePath));
+          const isUpdated = await this.updatePlugin(filePath, this.getScriptOptions(filePath));
           success = success && isUpdated;
         }
       );
@@ -104,7 +104,7 @@ export default class AmxxBuilder {
     for (const srcPath of dependents) {
       if (fileExtensions.script !== path.extname(srcPath).slice(1)) continue;
 
-      await this.compileScript(srcPath, this.getScriptOptions(srcPath));
+      await this.updatePlugin(srcPath, this.getScriptOptions(srcPath));
     }
 
     if (this.cache) {
@@ -134,7 +134,7 @@ export default class AmxxBuilder {
         input.dir,
         this.scriptsPathPattern,
         async (filePath: string) => {
-          await this.compileScript(filePath, input);
+          await this.updatePlugin(filePath, input);
 
           if (this.cache) {
             this.cache.save(config.cacheFile);
@@ -182,17 +182,26 @@ export default class AmxxBuilder {
     }
   }
 
-  async updateScript(srcPath: string): Promise<boolean> {
+  async updateScript(srcPath: string, options: IScriptInput): Promise<boolean> {
+    let isChanged = true;
     if (this.cache) {
-      const isChanged = await this.cache.updateSrc(srcPath);
-      if (!isChanged) return false;
+      isChanged = await this.cache.updateSrc(srcPath);
     }
 
     if (this.projectConfig.output.scripts) {
-      const destPath = path.join(this.projectConfig.output.scripts, path.parse(srcPath).base);
+      const destDir = this.resolveDestDir(srcPath, this.projectConfig.output.scripts, options);
+      const destPath = path.join(destDir, path.basename(srcPath));
 
-      await mkdirp(this.projectConfig.output.scripts);
+      if (this.cache && !isChanged) {
+        if (await this.cache.isRelevantFile(destPath)) return false;
+      }
+
+      await mkdirp(path.dirname(destPath));
       await copyFile(srcPath, destPath);
+
+      if (this.cache) {
+        await this.cache.updateFile(destPath);
+      }
 
       logger.info('📄 Script updated:', normalizePath(destPath));
     }
@@ -200,10 +209,10 @@ export default class AmxxBuilder {
     return true;
   }
 
-  async updateAsset(filePath: string, assetInput: IAssetInput): Promise<boolean> {
-    if (assetInput.filter) {
-      const srcFile = path.relative(assetInput.dir, filePath);
-      if (!this.execPathFilter(srcFile, assetInput.filter)) return false;
+  async updateAsset(filePath: string, options: IAssetInput): Promise<boolean> {
+    if (options.filter) {
+      const srcFile = path.relative(options.dir, filePath);
+      if (!this.execPathFilter(srcFile, options.filter)) return false;
     }
 
     let isChanged = true;
@@ -212,8 +221,8 @@ export default class AmxxBuilder {
     }
 
     if (this.projectConfig.output.assets) {
-      const srcFile = path.relative(assetInput.dir, filePath);
-      const destPath = path.join(this.projectConfig.output.assets, assetInput.dest || '', srcFile);
+      const srcFile = path.relative(options.dir, filePath);
+      const destPath = path.join(this.projectConfig.output.assets, options.dest || '', srcFile);
 
       if (this.cache && !isChanged) {
         if (await this.cache.isRelevantFile(destPath)) return false;
@@ -248,15 +257,13 @@ export default class AmxxBuilder {
     return true;
   }
 
-  async compileScript(filePath: string, options: IScriptInput): Promise<boolean> {
-    const srcPath = path.join(options.dir, path.relative(options.dir, filePath));
-
+  async updatePlugin(srcPath: string, options: IScriptInput): Promise<boolean> {
     try {
-      const bUpdated = await this.executeCompiler(srcPath, options);
+      const success = await this.compileScript(srcPath, options);
 
-      if (bUpdated) {
-        await this.updateScript(srcPath);
-      }
+      if (!success) return false;
+
+      await this.updateScript(srcPath, options);
     } catch (err) {
       if (!this.options.ignoreErrors) {
         throw err;
@@ -268,20 +275,14 @@ export default class AmxxBuilder {
     return true;
   }
 
-  async executeCompiler(srcPath: string, options: IScriptInput): Promise<boolean> {
-    if (!this.projectConfig.output.plugins) return false;
+  async compileScript(srcPath: string, options: IScriptInput): Promise<boolean> {
+    if (!this.projectConfig.output.plugins) return true;
 
-    const { name: scriptName, dir: scriptDir } = path.parse(srcPath);
-    const srcNestedDir = path.relative(options.dir, scriptDir);
+    const { name: scriptName } = path.parse(srcPath);
     const relateiveSrcPath = path.relative(process.cwd(), srcPath);
     const { fileExtensions } = this.projectConfig.compiler.config;
 
-    const destDir = path.join(
-      this.projectConfig.output.plugins,
-      options.dest || '',
-      (options.flat ?? this.projectConfig.rules.flatCompilation) ? '.' : srcNestedDir
-    );
-
+    const destDir = this.resolveDestDir(srcPath, this.projectConfig.output.plugins, options);
     const pluginDestPath = path.join(destDir, `${options.prefix || ''}${scriptName}.${fileExtensions.plugin}`);
 
     if (this.cache) {
@@ -290,7 +291,7 @@ export default class AmxxBuilder {
 
       if (isRelevantScript && isRelevantPlugin) {
         logger.info('📄 Script is already up to date:', normalizePath(relateiveSrcPath), 'Skipped!');
-        return false;
+        return true;
       }
     }
 
@@ -420,6 +421,9 @@ export default class AmxxBuilder {
   }
 
   private execPathFilter(filePath: string, filter: string | string[]) {
+    if (!filter) return true;
+    if (isArray(filter) && !filter.length) return true;
+
     return globule.isMatch(filter, filePath, {
       dot: true,
       nocase: true,
@@ -435,5 +439,13 @@ export default class AmxxBuilder {
     }
 
     return null;
+  }
+
+  private resolveDestDir(filePath: string, outDir: string, options: IInput) {
+    return path.join(
+      outDir,
+      options.dest || '',
+      options.flat ? '.' : path.relative(options.dir || '', path.dirname(filePath))
+    );
   }
 }

@@ -3,7 +3,7 @@ import { castArray, isNull, isObject, map, merge } from 'lodash';
 import path from 'path';
 import fs from 'fs';
 
-import { IProjectConfig, IResolvedProjectConfig } from '../types';
+import { IAssetInput, IInput, IProjectConfig, IResolvedProjectConfig, IScriptInput } from '../types';
 import { ICompilerConfig } from './types';
 import CLIError from '../common/cli-error';
 import config from '../config';
@@ -59,12 +59,16 @@ function resolveDefaults(type: string, compilerConfig: ICompilerConfig): IProjec
   };
 }
 
+
+
 function resolve(type: string, overrides: PartialDeep<IProjectConfig>, projectDir?: string): IResolvedProjectConfig {
   // Make sure projectDir is defined and is an absolute path
   projectDir = projectDir ? path.resolve(projectDir) : process.cwd();
 
   const compilerConfig = getCompilerConfig(type);
   const defaults = resolveDefaults(type, compilerConfig);
+  const projectConfig: IProjectConfig = merge({}, defaults, overrides);
+  const flatCompilation = projectConfig.rules.flatCompilation ?? true;
 
   const resolvePath = (p: string) => path.resolve(projectDir, p);
 
@@ -72,24 +76,40 @@ function resolve(type: string, overrides: PartialDeep<IProjectConfig>, projectDi
     isNull(p) ? null : path.resolve(projectDir, projectConfig.output.base || '', p)
   );
 
-  const projectConfig: IProjectConfig = merge({}, defaults, overrides);
-  
+  const resolveInput = (input: string | IInput): Required<IInput> => {
+    return isObject(input) 
+    ? {
+      ...input,
+      dir: path.resolve(projectDir, input.dir || ''),
+      flat: input.flat ?? flatCompilation,
+      dest: input.dest ?? '.',
+    }
+    : {
+      dir: path.resolve(projectDir, input),
+      flat: flatCompilation,
+      dest: '.',
+    };
+  };
+
+  const resolveScriptInput = (input: string | IScriptInput): Required<IScriptInput> => ({
+    ...resolveInput(input),
+    prefix: isObject(input) ? input.prefix ?? '' : '',
+  });
+
+  const resolveAssetInput = (input: string | IAssetInput): Required<IAssetInput> => ({
+    ...resolveInput(input),
+    flat: false,
+    filter: isObject(input) ? input.filter ?? [] : [],
+  });
+
   return merge(projectConfig, {
     type,
     path: projectDir,
     defaults,
     input: {
-      scripts: map(castArray(projectConfig.input.scripts), (input) => (
-        isObject(input)
-        ? { ...input, dir: resolvePath(input.dir) }
-        : { dir: resolvePath(input) }
-      )),
+      scripts: map(castArray(projectConfig.input.scripts), resolveScriptInput),
       include: map(castArray(projectConfig.input.include), resolvePath),
-      assets: map(castArray(projectConfig.input.assets), (input) => (
-        isObject(input)
-        ? { ...input, dir: resolvePath(input.dir) }
-        : { dir: resolvePath(input) }
-      ))
+      assets: map(castArray(projectConfig.input.assets), resolveAssetInput)
     },
     output: {
       scripts: resolveOutputPath(projectConfig.output.scripts),
@@ -113,7 +133,7 @@ function resolve(type: string, overrides: PartialDeep<IProjectConfig>, projectDi
       )
     },
     rules: {
-      flatCompilation: projectConfig.rules.flatCompilation ?? true,
+      flatCompilation,
       rebuildDependents: projectConfig.rules.rebuildDependents ?? true
     }
   });

@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import rimraf from 'rimraf';
 import { mkdirp } from 'mkdirp';
-import { map, some } from 'lodash';
+import { countBy, map, some } from 'lodash';
 
 import ProjectConfig from '../../src/project-config';
 import AmxxBuilder from '../../src/builder/builder';
@@ -28,14 +28,18 @@ jest.mock('../../src/builder/compiler', () => {
 const copyFile = jest.spyOn(jest.requireActual('../../src/utils/copy-file'), 'default');
 
 function createCompileParams(fileName: string, projectConfig: IResolvedProjectConfig, inputConfig?: IScriptInput) {
-  const { name, dir } = path.parse(fileName);
+  inputConfig = inputConfig ?? projectConfig.input.scripts[0];
+  const flatCompilation = inputConfig?.flat ?? projectConfig.rules.flatCompilation;
+  const filePath = path.join(projectConfig.path, fileName);
+
+  const { name } = path.parse(fileName);
 
   return {
-    path: path.resolve(fileName),
+    path: filePath,
     dest: path.resolve(
       projectConfig.output.plugins,
       inputConfig?.dest || '',
-      inputConfig?.flat ?? projectConfig.rules.flatCompilation ? '.' : path.relative(inputConfig?.dir || '.', dir),
+      flatCompilation ? '.' : path.relative(inputConfig?.dir || projectConfig.path, path.dirname(filePath)),
       `${inputConfig?.prefix || ''}${name}.amxx`
     ),
     compiler: path.resolve(projectConfig.compiler.dir, projectConfig.compiler.executable),
@@ -59,6 +63,8 @@ describe('Builder', () => {
   beforeEach(() => {
     rimraf.sync(`${TEST_DIR}/*`);
     jest.clearAllMocks();
+    compilerMock.mockClear();
+    copyFile.mockClear();
   });
 
   it('should build test project scripts', async () => {
@@ -167,38 +173,59 @@ describe('Builder', () => {
     }
   });
 
-  it('should build test project scripts with multiple dirs', async () => {
-    const scriptsDir = './src/scripts';
-    const extraScriptsDir = './src/extra-scripts';
+  describe('with multiple dirs', () => {
+    async function buildTestProjectAndCheck(flatCompilation: boolean) {
+      const scriptsDir = './src/scripts';
+      const extraScriptsDir = './src/extra-scripts';
+  
+      const scriptFiles = [
+        path.join(scriptsDir, 'test1.sma'),
+        path.join(scriptsDir, 'test2.sma'),
+        path.join(scriptsDir, 'test3.sma'),
+        path.join(scriptsDir, 'nested/test4.sma'),
+        path.join(scriptsDir, 'nested/nested/test5.sma'),
+      ];
 
-    const projectFiles = [
-      path.join(scriptsDir, 'test1.sma'),
-      path.join(scriptsDir, 'test2.sma'),
-      path.join(scriptsDir, 'test3.sma'),
-      path.join(scriptsDir, 'nested/test4.sma'),
-      path.join(scriptsDir, 'nested/nested/test5.sma'),
-      path.join(extraScriptsDir, 'extra1.sma'),
-      path.join(extraScriptsDir, 'nested/extra2.sma'),
-    ];
+      const extraScriptFiles = [
+        path.join(extraScriptsDir, 'extra1.sma'),
+        path.join(extraScriptsDir, 'nested/extra2.sma'),
+      ];
+  
+      const project = createProject(TEST_DIR);
+      await project.initDir([...scriptFiles, ...extraScriptFiles]);
+  
+      process.chdir(project.path);
+  
+      const projectConfig = await ProjectConfig.resolve(
+        config.defaultProjectType,
+        {
+          input: { scripts: [scriptsDir, extraScriptsDir], include: [] },
+          rules: { flatCompilation }
+        }
+      );
+  
+      const builder = new AmxxBuilder(projectConfig);
+  
+      await builder.buildScripts();
+  
+      for (const fileName of scriptFiles) {
+        const compilerParams = createCompileParams(fileName, projectConfig, projectConfig.input.scripts[0]);
+        expect(compilerMock).toHaveBeenCalledWith(compilerParams);
+      }
 
-    const project = createProject(TEST_DIR);
-    await project.initDir(projectFiles);
-
-    process.chdir(project.path);
-
-    const projectConfig = await ProjectConfig.resolve(
-      config.defaultProjectType,
-      { input: { scripts: [scriptsDir, extraScriptsDir], include: [] } }
-    );
-
-    const builder = new AmxxBuilder(projectConfig);
-
-    await builder.buildScripts();
-
-    for (const fileName of projectFiles) {
-      const compilerParams = createCompileParams(fileName, projectConfig);
-      expect(compilerMock).toHaveBeenCalledWith(compilerParams);
+      for (const fileName of extraScriptFiles) {
+        const compilerParams = createCompileParams(fileName, projectConfig, projectConfig.input.scripts[1]);
+        expect(compilerMock).toHaveBeenCalledWith(compilerParams);
+      }
     }
+
+    it('should build test project with flat compilation enabled', async () => {
+      await buildTestProjectAndCheck(true);
+    });
+
+    it('should build test project with flat compilation disabled', async () => {
+      await buildTestProjectAndCheck(false);
+    });
   });
 
   it('should build test project scripts with neseted object script input', async () => {
@@ -260,6 +287,8 @@ describe('Builder', () => {
 
     await builder.buildScripts();
 
+    expect(compilerMock).toHaveBeenCalledTimes(projectFiles.length);
+
     for (const fileName of projectFiles) {
       const compilerParams = createCompileParams(fileName, projectConfig, inputConfig);
       expect(compilerMock).toHaveBeenCalledWith(compilerParams);
@@ -294,9 +323,10 @@ describe('Builder', () => {
 
     await builder.buildScripts();
 
+    expect(compilerMock).toHaveBeenCalledTimes(projectFiles.length);
+
     for (const fileName of projectFiles) {
       const compilerParams = createCompileParams(fileName, projectConfig, inputConfig);
-
       expect(compilerMock).toHaveBeenCalledWith(compilerParams);
     }
   });
@@ -324,6 +354,9 @@ describe('Builder', () => {
     const builder = new AmxxBuilder(projectConfig);
 
     await builder.buildScripts();
+
+    expect(compilerMock).toHaveBeenCalledTimes(projectFiles.length);
+
     for (const fileName of projectFiles) {
       const compilerParams = createCompileParams(fileName, projectConfig, inputConfig);
       expect(compilerMock).toHaveBeenCalledWith(compilerParams);
@@ -378,11 +411,19 @@ describe('Builder', () => {
     const builder = new AmxxBuilder(projectConfig);
 
     await builder.buildScripts();
+
+    const isRelative = (filePath: string, dir: string) => !path.relative(dir, filePath).startsWith('..');
+
+    const expectedCalls = projectConfig.input.scripts
+      .reduce(
+        (acc, input) => acc + projectFiles.filter((file) => isRelative(file, input.dir)).length,
+        0
+    );
   
-    expect(compilerMock).toHaveBeenCalledTimes(projectFiles.length);
+    expect(compilerMock).toHaveBeenCalledTimes(expectedCalls);
 
     for (const input of projectConfig.input.scripts) {
-      const files = projectFiles.filter((file) => !path.relative(input.dir, file).startsWith('..'));
+      const files = projectFiles.filter((file) => isRelative(file, input.dir));
 
       for (const file of files) {
         const compilerParams = createCompileParams(file, projectConfig, input);
@@ -419,7 +460,7 @@ describe('Builder', () => {
     for (const fileName of projectFiles) {
       expect(builder.updateAsset).toHaveBeenCalledWith(
         path.resolve(fileName),
-        { dir: path.resolve(assetsDir) }
+        { dir: path.resolve(assetsDir), flat: false, filter: [], dest: '.' }
       );
     }
   });
@@ -460,14 +501,14 @@ describe('Builder', () => {
     for (const fileName of projectFiles) {
       expect(builder.updateAsset).toHaveBeenCalledWith(
         path.resolve(fileName),
-        { dir: path.resolve(assetsDir) }
+        { dir: path.resolve(assetsDir), flat: false, filter: [], dest: '.' }
       );
     }
 
     for (const fileName of extraProjectFiles) {
       expect(builder.updateAsset).toHaveBeenCalledWith(
         path.resolve(fileName),
-        { dir: path.resolve(extraAssetsDir) }
+        { dir: path.resolve(extraAssetsDir), flat: false, filter: [], dest: '.' }
       );
     }
   });

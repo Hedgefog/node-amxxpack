@@ -8,6 +8,53 @@ import config from '../../src/config';
 const PROJECT_DIR = TEST_TMP_DIR;
 
 describe('Project Config Resolver', () => {
+  it('should resolve scripts input', async () => {
+    const overrides = {
+      input: {
+        scripts: [
+          'scripts',
+          { dir: 'scripts2' },
+          { dir: 'scripts3', flat: true },
+        ],
+        include: 'include',
+        assets: 'assets',
+      },
+      rules: { flatCompilation: false }
+    };
+
+    const resolvePath = (p: string) => path.resolve(PROJECT_DIR, p);
+
+    const projectConfig = ProjectConfig.resolve(config.defaultProjectType, overrides, PROJECT_DIR);
+
+    for (const input of projectConfig.input.scripts) {
+      expect(input).toHaveProperty('dir', resolvePath(isObject(input) ? input.dir : input));
+      expect(input).toHaveProperty('dest', isObject(input) ? input.dest ?? '.' : '.');
+      expect(input).toHaveProperty('flat', isObject(input) ? input.flat ?? overrides.rules.flatCompilation : overrides.rules.flatCompilation);
+      expect(input).toHaveProperty('prefix', isObject(input) ? input.prefix ?? '' : '');
+    }
+  });
+
+  it('should resolve assets input', async () => {
+    const overrides = {
+      input: {
+        assets: [
+          'assets',
+        ],
+      },
+    };
+
+    const resolvePath = (p: string) => path.resolve(PROJECT_DIR, p);
+
+    const projectConfig = ProjectConfig.resolve(config.defaultProjectType, overrides, PROJECT_DIR);
+
+    for (const input of projectConfig.input.assets) {
+      expect(input).toHaveProperty('dir', resolvePath(isObject(input) ? input.dir : input));
+      expect(input).toHaveProperty('dest', isObject(input) ? input.dest ?? '.' : '.');
+      expect(input).toHaveProperty('flat', false);
+      expect(input).toHaveProperty('filter', isObject(input) ? input.filter ?? [] : []);
+    }
+  });
+  
   it('should resolve undefined paths as defaults', async () => {
     const defaultConfig = ProjectConfig.resolve(config.defaultProjectType,{}, PROJECT_DIR);
 
@@ -63,12 +110,19 @@ describe('Project Config Resolver', () => {
       },
       compiler: { dir: '' },
       thirdparty: { dir: '' },
-      include: ['']
+      include: [''],
+      rules: { flatCompilation: false }
     }, PROJECT_DIR);
 
-    expect(projectConfig.input.scripts).toEqual([{ dir: PROJECT_DIR}]);
-    expect(projectConfig.input.include).toEqual([PROJECT_DIR]);
-    expect(projectConfig.input.assets).toEqual([{ dir: PROJECT_DIR }]);
+    expect(projectConfig.input.scripts).toHaveLength(1);
+    expect(projectConfig.input.scripts[0]).toHaveProperty('dir', PROJECT_DIR);
+    
+    expect(projectConfig.input.include).toHaveLength(1);
+    expect(projectConfig.input.include[0]).toBe(PROJECT_DIR);
+
+    expect(projectConfig.input.assets).toHaveLength(1);
+    expect(projectConfig.input.assets[0]).toHaveProperty('dir', PROJECT_DIR);
+
     expect(projectConfig.output.scripts).toBe(PROJECT_DIR);
     expect(projectConfig.output.plugins).toBe(PROJECT_DIR);
     expect(projectConfig.output.include).toBe(PROJECT_DIR);
@@ -97,14 +151,22 @@ describe('Project Config Resolver', () => {
       },
       compiler: { dir: path.resolve(PROJECT_DIR, 'compiler') },
       thirdparty: { dir: path.resolve(PROJECT_DIR, 'thirdparty') },
-      include: [path.resolve(PROJECT_DIR, 'extra-include')]
+      include: [path.resolve(PROJECT_DIR, 'extra-include')],
+      rules: { flatCompilation: false }
     };
 
     const projectConfig = ProjectConfig.resolve(config.defaultProjectType, overrides);
 
-    expect(projectConfig.input.scripts).toEqual(map(overrides.input.scripts, (script) => isObject(script) ? script : { dir: script }));
+    expect(projectConfig.input.scripts).toHaveLength(overrides.input.scripts.length);
+
+    for (const input of projectConfig.input.scripts) {
+      expect(input).toHaveProperty('dir', isObject(input) ? input.dir : input);
+    }
+
+    expect(projectConfig.input.assets).toHaveLength(1);
+    expect(projectConfig.input.assets[0]).toHaveProperty('dir', overrides.input.assets);
+
     expect(projectConfig.input.include).toEqual([overrides.input.include]);
-    expect(projectConfig.input.assets).toEqual([{ dir: overrides.input.assets }]);
     expect(projectConfig.output.scripts).toBe(overrides.output.scripts);
     expect(projectConfig.output.plugins).toBe(overrides.output.plugins);
     expect(projectConfig.output.include).toBe(overrides.output.include);
@@ -133,16 +195,24 @@ describe('Project Config Resolver', () => {
       },
       compiler: { dir: 'compiler' },
       thirdparty: { dir: 'thirdparty' },
-      include: ['extra-include']
+      include: ['extra-include'],
+      rules: { flatCompilation: false }
     };
 
     const resolvePath = (p: string) => path.resolve(PROJECT_DIR, p);
 
     const projectConfig = ProjectConfig.resolve(config.defaultProjectType, overrides, PROJECT_DIR);
 
-    expect(projectConfig.input.scripts).toEqual(map(overrides.input.scripts, (script) => ({ dir: resolvePath(isObject(script) ? script.dir : script) })));
+    expect(projectConfig.input.scripts).toHaveLength(overrides.input.scripts.length);
+
+    for (const input of projectConfig.input.scripts) {
+      expect(input).toHaveProperty('dir', resolvePath(isObject(input) ? input.dir : input));
+    }
+
+    expect(projectConfig.input.assets).toHaveLength(1);
+    expect(projectConfig.input.assets[0]).toHaveProperty('dir', resolvePath(overrides.input.assets));
+
     expect(projectConfig.input.include).toEqual([resolvePath(overrides.input.include)]);
-    expect(projectConfig.input.assets).toEqual([{ dir: resolvePath(overrides.input.assets) }]);
     expect(projectConfig.output.scripts).toBe(resolvePath(overrides.output.scripts));
     expect(projectConfig.output.plugins).toBe(resolvePath(overrides.output.plugins));
     expect(projectConfig.output.include).toBe(resolvePath(overrides.output.include));

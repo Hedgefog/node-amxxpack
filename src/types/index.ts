@@ -1,16 +1,17 @@
 import { ICompilerConfig } from "../project-config/types";
 
-export interface IAssetInput {
+export interface IInput {
   dir: string;
   dest?: string;
+  flat?: boolean;
+};
+
+export interface IAssetInput extends IInput {
   filter?: string | string[];
 }
 
-export interface IScriptInput {
-  dir: string;
-  dest?: string;
+export interface IScriptInput extends IInput {
   prefix?: string;
-  flat?: boolean;
 }
 
 export interface IDependency {
@@ -70,9 +71,9 @@ export interface IResolvedProjectConfig extends IProjectConfig {
   type: string;
   defaults: IProjectConfig;
   input: {
-    scripts: IScriptInput[];
+    scripts: Required<IScriptInput>[];
     include: string[];
-    assets: IAssetInput[];
+    assets: Required<IAssetInput>[];
   };
   output: {
     scripts: string;
