@@ -1,5 +1,13 @@
-# 📦 AMXXPack 🇺🇦 [![npm](https://img.shields.io/npm/v/amxxpack/beta.svg)](https://www.npmjs.com/package/amxxpack/v/beta)
-Simple build system and **CLI** for **AMX Mod X** projects.
+# 📦 AMXXPack 🇺🇦
+
+[![npm version](https://img.shields.io/npm/v/amxxpack/beta.svg)](https://www.npmjs.com/package/amxxpack/v/beta)
+[![License](https://img.shields.io/github/license/Hedgefog/node-amxxpack)](https://github.com/Hedgefog/node-amxxpack/blob/master/LICENSE)
+[![npm downloads](https://img.shields.io/npm/dm/amxxpack)](https://www.npmjs.com/package/amxxpack/v/beta)
+[![GitHub issues](https://img.shields.io/github/issues/Hedgefog/node-amxxpack)](https://github.com/Hedgefog/node-amxxpack/issues)
+[![Dependencies Status](https://img.shields.io/librariesio/release/npm/amxxpack)](https://libraries.io/npm/amxxpack)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Hedgefog/node-amxxpack/pulls)
+
+Build system and **CLI** for **AMX Mod X** and **SourceMod** projects.
 
 ---
 
@@ -9,9 +17,16 @@ Simple build system and **CLI** for **AMX Mod X** projects.
 - [Requirements](#-requirements)
 - [Installation](#-installation)
 - [Quick start](#-quick-start)
+- [Examples](#-examples)
+  - [Basic Project Structure](#basic-project-structure)
+  - [Configuration Examples](#configuration-examples)
+  - [Development Workflow](#development-workflow-examples)
+  - [Integration Examples](#integration-examples)
 - [Commands](#-commands)
 - [Advanced configuration](#-advanced-configuration)
 - [Using with SourceMod](#using-with-sourcemod)
+- [Troubleshooting](#-troubleshooting)
+- [Contributing](#-contributing)
 - [License](#-license)
 
 ---
@@ -20,42 +35,60 @@ Simple build system and **CLI** for **AMX Mod X** projects.
 
 This system will be useful for projects with multiple plugins and assets. Using the command-line interface you can build an entire project with a single command. It also supports hot rebuild to keep your plugins and assets up to date during the work.
 
+Check out projects [built with **AMXXPack**](https://github.com/search?q=path%3A.amxxpack*.json&type=code)
+
 ---
 
 ## 📚 Features
-- ⚙ Flexible configuration
-- 🔥 Hot reload
-- 🧸 Assets builder
+
+### 🛠 Build System
+- ⚙ Flexible JSON-based configuration
+- 🗃️ Multi-plugin project support
+- 🔄 Incremental builds with caching
+- 🎯 Selective plugin compilation
+- 📁 Support for multiple input directories
+- 🔧 Customizable output structure
+- 🔥 Hot reload for rapid development
+
+### 🧩 Plugin Development
+- 🔗 Third-party dependencies management
+- 📥 Automatic compiler downloads
+- 📚 Generating new files using CLI commands
+- ⛓️ Support for both **AMX Mod X** and **SourceMod**
+
+### 🧸 Asset Management
+- 🔍 Glob pattern filtering
 
 ---
 
-## 🔄Requirements
-- Node.js 10.0.0+
+## 🔄 Requirements
+- Node.js 16.0.0 or higher
 
 ---
 
 ## 🔧 Installation
 **AMXXPack** is available through the npm registry.
-Installation can be done using the `npm i amxxpack@1.5.0-beta.2` command:
+Installation can be done using the `npm i amxxpack@beta` command:
 ```
-npm install amxxpack@1.5.0-beta.2
+npm install amxxpack@beta
 ```
 
 or install it globally to use as a system command
 ```
-npm install -g amxxpack@1.5.0-beta.2
+npm install -g amxxpack@beta
 ```
 
 ---
 
-
 ## ▶ Quick start
 - Open a terminal inside the project directory (existing or create a new one)
-- Execute `npm install amxxpack@1.5.0-beta.2 -g` command to install `amxxpack` globally
+- Execute `npm install amxxpack@beta -g` command to install `amxxpack` globally
 - Execute `amxxpack create .` command to create a new config
 - Execute `amxxpack install` to download project dependencies (compiler, thirdparty etc.)
 - Use `amxxpack build` command to build the project
 - Use `amxxpack watch` command to build the project and watch changes
+
+---
 
 ## 📋 Commands
 - `amxxpack create <name>` - create new project
@@ -92,6 +125,161 @@ npm install -g amxxpack@1.5.0-beta.2
 - `amxxpack c` - alias to `compile` command
 
 ---
+
+## 📋 Examples
+
+### Basic Project Structure
+
+Here's a typical **AMXXPack** project structure:
+
+```
+myproject/
+├── .thirdparty/         # Third-party dependencies
+│
+├── assets/              # Game assets
+│   ├── models/
+│   └── sounds/
+│
+├── src/
+│   ├── scripts/         # Plugin source files
+│   │   ├── plugin1.sma
+│   │   └── plugin2.sma
+│   └── include/         # Include files
+│       ├── constants.inc
+│       └── stocks.inc
+│
+├── .amxxpack.json        # Project configuration
+└── package.json          # NPM configuration
+```
+
+### Configuration Examples
+
+#### Basic Configuration
+```json
+{
+  "type": "amxmodx",
+  "compiler": {
+    "version": "1.9",
+    "addons": ["cstrike"]
+  },
+  "input": {
+    "scripts": "./src/scripts",
+    "include": "./src/include",
+    "assets": "./assets"
+  },
+  "output": {
+    "base": "./dist",
+    "plugins": "./addons/amxmodx/plugins",
+    "scripts": "./addons/amxmodx/scripting",
+    "include": "./addons/amxmodx/scripting/include",
+    "assets": "."
+  }
+}
+```
+
+#### Advanced Configuration with Third-party Dependencies
+```json
+{
+  "type": "amxmodx",
+  "compiler": {
+    "version": "1.9",
+    "addons": ["cstrike"]
+  },
+  "thirdparty": {
+    "dependencies": [
+      { "name": "somemodule", "url": "https://website/somemodule-v100.zip" }
+    ]
+  },
+  "include": [
+    "./.compiler/include",
+    "./.thirdparty/somemodule/include"
+  ],
+  "input": {
+    "scripts": [
+      { "dir": "./src/scripts", "output": { "prefix": "mymod_" } },
+      { "dir": "./somemodule/scripts" }
+    ],
+    "include": ["./src/include"],
+    "assets": [
+      { "dir": "./assets" },
+      { "dir": "./somemodule/models", "output": { "dest": "./models" } }
+    ]
+  },
+  "output": {
+    "base": "./dist",
+    "plugins": "./addons/amxmodx/plugins",
+    "scripts": "./addons/amxmodx/scripting",
+    "include": "./addons/amxmodx/scripting/include",
+    "assets": "."
+  }
+}
+```
+
+### Development Workflow Examples
+
+1. **Starting a New Project**
+```bash
+# Create a new directory
+mkdir myproject
+cd myproject
+
+# Initialize the project
+amxxpack create . --git --type amxmodx
+
+# Install dependencies
+amxxpack install
+
+# Generate a new plugin
+amxxpack generate script mymod_core --author "Your Name" --version "1.0.0"
+
+# Start development with hot reload
+amxxpack build --watch
+```
+
+2. **Working with Multiple Plugins**
+```bash
+# Compile specific plugins
+amxxpack compile "mymod_core.sma"
+amxxpack compile "mymod_*.sma"
+amxxpack compile "features/*.sma"
+
+# Build entire project
+amxxpack build
+
+# Watch for changes
+amxxpack build --watch
+```
+
+3. **Using with Version Control**
+```bash
+# Typical .gitignore entries
+node_modules/
+.compiler/
+.thirdparty/
+dist/
+*.amxx
+```
+
+### Integration Examples
+
+1. **CI/CD Pipeline (GitHub Actions)**
+```yaml
+name: Build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - run: npm install -g amxxpack@beta
+      - run: amxxpack install
+      - run: amxxpack build
+```
 
 ## 🦸 Advanced configuration
 
@@ -174,16 +362,28 @@ You can use multiple directories as builder inputs, just specify an array of dir
   }
 ```
 
-### Input options
-You can specify additional options for the input directories.
+### Configuring input and output
+You can specify additional output options for the input directories.
+Output options can be specified in the input configuration or in the output configuration. Specifying options in the input configuration will override output configuration for specific input.
 
 #### Flat compilation
-`flat` option is used to specify if the scripts should be compiled in a flat directory structure even if `rules.flatCompilation` is disabled.
+`flat` option is used to specify if the input directory should be copied using a flat directory structure.
+By default only `assets` are compiled without a flat directory structure.
 
 ```json
   {
     "input": {
-      "scripts": ["./src/scripts", { "dir": "./src/scripts", "flat": false }]
+      "scripts": ["./src/scripts", { "dir": "./src/scripts", "output": { "flat": false } }]
+    }
+  }
+```
+
+Same option can be specified for the output directories:
+
+```json
+  {
+    "output": {
+      "scripts": { "dir": "./dist/scripts", "flat": false }
     }
   }
 ```
@@ -194,7 +394,16 @@ You can specify additional options for the input directories.
 ```json
   {
     "input": {
-      "scripts": ["./src/scripts", { "dir": "./src/scripts", "prefix": "test_" }]
+      "scripts": ["./src/scripts", { "dir": "./src/scripts", "output": { "prefix": "test_" } }]
+    }
+  }
+```
+
+For output directories:
+```json
+  {
+    "output": {
+      "scripts": { "dir": "./dist/scripts", "prefix": "test_" }
     }
   }
 ```
@@ -206,7 +415,16 @@ You can specify additional options for the input directories.
 ```json
   {
     "input": {
-      "scripts": ["./src/scripts", { "dir": "./src/scripts", "dest": "sub" }]
+      "scripts": ["./src/scripts", { "dir": "./src/scripts", "output": { "dest": "sub" } }]
+    }
+  }
+```
+
+For output directories:
+```json
+  {
+    "output": {
+      "scripts": { "dir": "./dist/scripts", "dest": "sub" }
     }
   }
 ```
@@ -292,7 +510,7 @@ If you use **SourceMod** with **AMXXPack** you should set `type` to `sourcemod` 
 {
   "type": "sourcemod",
   "compiler": {
-    "version": "1.12.0",
+    "version": "1.12",
   }
 }
 ```
