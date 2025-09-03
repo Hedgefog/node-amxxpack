@@ -16,9 +16,9 @@ function createProject(dir: string) {
   const projectPath = path.join(dir, projectName);
 
   return {
-    projectName,
-    projectPath,
-    projectOptions: {
+    name: projectName,
+    path: projectPath,
+    options: {
       author: '',
       description: '',
       version: '0.0.1',

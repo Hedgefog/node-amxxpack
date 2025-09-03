@@ -8,7 +8,7 @@ import fs from 'fs';
 import compiler, { AMXPCMessageType } from './compiler';
 import { IAssetInput, IResolvedProjectConfig, IScriptInput } from '../types';
 import logger from '../logger/logger';
-import PluginsCache from './plugins-cache';
+import Cache from './cache';
 import copyFile from '../utils/copy-file';
 import config from '../config';
 import setupWatch from '../utils/setup-watch';
@@ -20,14 +20,14 @@ export interface IBuildOptions {
 }
 
 export default class AmxxBuilder {
-  private pluginsCache: PluginsCache = null;
+  private cache: Cache = null;
   private scriptsPathPattern: string;
   private includePathPattern: string;
   private assetsPathPattern: string;
 
   constructor(private projectConfig: IResolvedProjectConfig, private options: IBuildOptions = {}) {
     if (!this.options.noCache) {
-      this.initPluginCache();
+      this.initCache();
     }
 
     this.scriptsPathPattern = `**/*.${projectConfig.compiler.config.fileExtensions.script}`;
@@ -50,8 +50,8 @@ export default class AmxxBuilder {
         logger.error('Build completed with errors!');
       }
 
-      if (this.pluginsCache) {
-        this.pluginsCache.save(config.cacheFile);
+      if (this.cache) {
+        this.cache.save(config.cacheFile);
       }
     } catch (err: unknown) {
       throw new CLIError(`Build failed! Error: ${err instanceof Error ? err.message : String(err)}`);
@@ -95,20 +95,20 @@ export default class AmxxBuilder {
   }
 
   async rebuildDependents(filePath: string) {
-    if (!this.pluginsCache) return;
+    if (!this.cache) return;
     if (!this.projectConfig.rules.rebuildDependents) return;
     
     const { fileExtensions } = this.projectConfig.compiler.config;
 
-    const dependents = this.pluginsCache.getDependents(filePath);
+    const dependents = this.cache.getDependents(filePath);
     for (const srcPath of dependents) {
       if (fileExtensions.script !== path.extname(srcPath).slice(1)) continue;
 
       await this.compileScript(srcPath, this.getScriptOptions(srcPath));
     }
 
-    if (this.pluginsCache) {
-      this.pluginsCache.save(config.cacheFile);
+    if (this.cache) {
+      this.cache.save(config.cacheFile);
     }
   }
 
@@ -136,8 +136,8 @@ export default class AmxxBuilder {
         async (filePath: string) => {
           await this.compileScript(filePath, input);
 
-          if (this.pluginsCache) {
-            this.pluginsCache.save(config.cacheFile);
+          if (this.cache) {
+            this.cache.save(config.cacheFile);
           }
         }
       );
@@ -155,8 +155,8 @@ export default class AmxxBuilder {
           await this.rebuildDependents(filePath);
         }
 
-        if (this.pluginsCache) {
-          this.pluginsCache.save(config.cacheFile);
+        if (this.cache) {
+          this.cache.save(config.cacheFile);
         }
       }
     );
@@ -173,14 +173,18 @@ export default class AmxxBuilder {
         this.assetsPathPattern,
         async (filePath: string) => {
           await this.updateAsset(filePath, assetInput);
+
+          if (this.cache) {
+            this.cache.save(config.cacheFile);
+          }
         }
       );
     }
   }
 
   async updateScript(srcPath: string): Promise<boolean> {
-    if (this.pluginsCache) {
-      const isChanged = await this.pluginsCache.updateSrc(srcPath);
+    if (this.cache) {
+      const isChanged = await this.cache.updateSrc(srcPath);
       if (!isChanged) return false;
     }
 
@@ -197,29 +201,38 @@ export default class AmxxBuilder {
   }
 
   async updateAsset(filePath: string, assetInput: IAssetInput): Promise<boolean> {
-    const srcFile = path.relative(assetInput.dir, filePath);
     if (assetInput.filter) {
+      const srcFile = path.relative(assetInput.dir, filePath);
       if (!this.execPathFilter(srcFile, assetInput.filter)) return false;
     }
 
-    if (this.pluginsCache) {
-      const isChanged = await this.pluginsCache.updateFile(filePath);
-      if (!isChanged) return false;
+    let isChanged = true;
+    if (this.cache) {
+      isChanged = await this.cache.updateFile(filePath);
     }
 
-    if (this.projectConfig.output.assets) {    
+    if (this.projectConfig.output.assets) {
+      const srcFile = path.relative(assetInput.dir, filePath);
       const destPath = path.join(this.projectConfig.output.assets, assetInput.dest || '', srcFile);
-      await mkdirp(path.parse(destPath).dir);
+
+      if (this.cache && !isChanged) {
+        if (await this.cache.isRelevantFile(destPath)) return false;
+      }
+
+      await mkdirp(path.dirname(destPath));
       await copyFile(filePath, destPath);
+
+      if (this.cache) {
+        await this.cache.updateFile(destPath);
+      }
+
       logger.info('🧸 Asset updated:', normalizePath(destPath));
     }
-
-    return true;
   }
 
   async updateInclude(filePath: string): Promise<boolean> {
-    if (this.pluginsCache) {
-      const isChanged = await this.pluginsCache.updateSrc(filePath);
+    if (this.cache) {
+      const isChanged = await this.cache.updateSrc(filePath);
       if (!isChanged) return false;
     }
 
@@ -271,9 +284,9 @@ export default class AmxxBuilder {
 
     const pluginDestPath = path.join(destDir, `${options.prefix || ''}${scriptName}.${fileExtensions.plugin}`);
 
-    if (this.pluginsCache) {
-      const isRelevantScript = await this.pluginsCache.isRelevantSrc(srcPath);
-      const isRelevantPlugin = await this.pluginsCache.isRelevantPlugin(pluginDestPath);
+    if (this.cache) {
+      const isRelevantScript = await this.cache.isRelevantSrc(srcPath);
+      const isRelevantPlugin = await this.cache.isRelevantFile(pluginDestPath);
 
       if (isRelevantScript && isRelevantPlugin) {
         logger.info('📄 Script is already up to date:', normalizePath(relateiveSrcPath), 'Skipped!');
@@ -304,11 +317,11 @@ export default class AmxxBuilder {
       ]
     });
 
-    if (this.pluginsCache) {
+    if (this.cache) {
       if (!result.error) {
-        await this.pluginsCache.updateFile(pluginDestPath);
+        await this.cache.updateFile(pluginDestPath);
       } else {
-        await this.pluginsCache.deleteFile(pluginDestPath);
+        await this.cache.deleteFile(pluginDestPath);
       }
     }
 
@@ -370,23 +383,23 @@ export default class AmxxBuilder {
     watcher.on('add', updateFn);
     watcher.on('change', updateFn);
     watcher.on('unlink', (filePath: string) => {
-      if (this.pluginsCache) {
-        this.pluginsCache.deleteFile(filePath);
+      if (this.cache) {
+        this.cache.deleteFile(filePath);
       }
     });
   }
 
-  private initPluginCache() {
+  private initCache() {
     const ignoredIncludes = this.getNativeIncludes();
 
-    this.pluginsCache = new PluginsCache(
+    this.cache = new Cache(
       this.projectConfig.path,
       this.projectConfig.input.include,
       this.projectConfig.compiler.config.fileExtensions,
       ignoredIncludes
     );
 
-    this.pluginsCache.load(config.cacheFile);
+    this.cache.load(config.cacheFile);
   }
 
   private getNativeIncludes(): string[] {

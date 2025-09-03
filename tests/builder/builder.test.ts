@@ -10,6 +10,7 @@ import createProject from '../helpers/create-project';
 import { IResolvedProjectConfig, IScriptInput } from '../../src/types';
 import { TEST_TMP_DIR } from '../constants';
 import config from '../../src/config';
+import compilerMock from '../mocks/compiler';
 
 const TEST_DIR = path.join(TEST_TMP_DIR, 'builder');
 
@@ -24,7 +25,7 @@ jest.mock('../../src/builder/compiler', () => {
   };
 });
 
-const compiler = jest.requireActual('../mocks/compiler').default;
+const copyFile = jest.spyOn(jest.requireActual('../../src/utils/copy-file'), 'default');
 
 function createCompileParams(fileName: string, projectConfig: IResolvedProjectConfig, inputConfig?: IScriptInput) {
   const { name, dir } = path.parse(fileName);
@@ -74,7 +75,7 @@ describe('Builder', () => {
     const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
 
-    process.chdir(project.projectPath);
+    process.chdir(project.path);
 
     const projectConfig = await ProjectConfig.resolve(
       config.defaultProjectType,
@@ -87,7 +88,7 @@ describe('Builder', () => {
 
     for (const fileName of projectFiles) {
       const compilerParams = createCompileParams(fileName, projectConfig);
-      expect(compiler).toHaveBeenCalledWith(compilerParams);
+      expect(compilerMock).toHaveBeenCalledWith(compilerParams);
     }
   });
 
@@ -109,7 +110,7 @@ describe('Builder', () => {
     const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
 
-    process.chdir(project.projectPath);
+    process.chdir(project.path);
 
     const projectConfig = await ProjectConfig.resolve(
       config.defaultProjectType,
@@ -126,12 +127,12 @@ describe('Builder', () => {
         ...projectConfig.input,
         include: map(
           [includeDir, ...projectNestedIncludeDirs],
-          (dir) => path.resolve(project.projectPath, dir)
+          (dir) => path.resolve(project.path, dir)
         )
       }
     });
 
-    expect(compiler).toHaveBeenCalledWith(compilerParams);
+    expect(compilerMock).toHaveBeenCalledWith(compilerParams);
   });
 
   it('should build test project without adding a non-existing include input dirs', async () => {
@@ -145,7 +146,7 @@ describe('Builder', () => {
     const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
 
-    process.chdir(project.projectPath);
+    process.chdir(project.path);
 
     const projectConfig = await ProjectConfig.resolve(
       config.defaultProjectType,
@@ -162,7 +163,7 @@ describe('Builder', () => {
         input: { ...projectConfig.input, include: [] }
       });
 
-      expect(compiler).toHaveBeenCalledWith(compilerParams);
+      expect(compilerMock).toHaveBeenCalledWith(compilerParams);
     }
   });
 
@@ -183,7 +184,7 @@ describe('Builder', () => {
     const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
 
-    process.chdir(project.projectPath);
+    process.chdir(project.path);
 
     const projectConfig = await ProjectConfig.resolve(
       config.defaultProjectType,
@@ -196,7 +197,7 @@ describe('Builder', () => {
 
     for (const fileName of projectFiles) {
       const compilerParams = createCompileParams(fileName, projectConfig);
-      expect(compiler).toHaveBeenCalledWith(compilerParams);
+      expect(compilerMock).toHaveBeenCalledWith(compilerParams);
     }
   });
 
@@ -214,7 +215,7 @@ describe('Builder', () => {
     const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
 
-    process.chdir(project.projectPath);
+    process.chdir(project.path);
 
     const projectConfig = await ProjectConfig.resolve(
       config.defaultProjectType,{
@@ -227,7 +228,7 @@ describe('Builder', () => {
 
     for (const fileName of projectFiles) {
       const compilerParams = createCompileParams(fileName, projectConfig);
-      expect(compiler).toHaveBeenCalledWith(compilerParams);
+      expect(compilerMock).toHaveBeenCalledWith(compilerParams);
     }
   });
 
@@ -245,7 +246,7 @@ describe('Builder', () => {
     const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
 
-    process.chdir(project.projectPath);
+    process.chdir(project.path);
 
     const inputConfig = { dir: scriptsDir, flat: true };
 
@@ -261,7 +262,7 @@ describe('Builder', () => {
 
     for (const fileName of projectFiles) {
       const compilerParams = createCompileParams(fileName, projectConfig, inputConfig);
-      expect(compiler).toHaveBeenCalledWith(compilerParams);
+      expect(compilerMock).toHaveBeenCalledWith(compilerParams);
     }
   });
 
@@ -279,7 +280,7 @@ describe('Builder', () => {
     const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
 
-    process.chdir(project.projectPath);
+    process.chdir(project.path);
 
     const inputConfig = { dir: scriptsDir, flat: false };
 
@@ -296,7 +297,7 @@ describe('Builder', () => {
     for (const fileName of projectFiles) {
       const compilerParams = createCompileParams(fileName, projectConfig, inputConfig);
 
-      expect(compiler).toHaveBeenCalledWith(compilerParams);
+      expect(compilerMock).toHaveBeenCalledWith(compilerParams);
     }
   });
 
@@ -311,7 +312,7 @@ describe('Builder', () => {
     const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
 
-    process.chdir(project.projectPath);
+    process.chdir(project.path);
 
     const inputConfig = { dir: scriptsDir, prefix: 'test_' };
 
@@ -325,7 +326,7 @@ describe('Builder', () => {
     await builder.buildScripts();
     for (const fileName of projectFiles) {
       const compilerParams = createCompileParams(fileName, projectConfig, inputConfig);
-      expect(compiler).toHaveBeenCalledWith(compilerParams);
+      expect(compilerMock).toHaveBeenCalledWith(compilerParams);
     }
   });
 
@@ -355,7 +356,7 @@ describe('Builder', () => {
     const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
 
-    process.chdir(project.projectPath);
+    process.chdir(project.path);
 
     const prefix = 'test_';
 
@@ -378,14 +379,14 @@ describe('Builder', () => {
 
     await builder.buildScripts();
   
-    expect(compiler).toHaveBeenCalledTimes(projectFiles.length);
+    expect(compilerMock).toHaveBeenCalledTimes(projectFiles.length);
 
     for (const input of projectConfig.input.scripts) {
       const files = projectFiles.filter((file) => !path.relative(input.dir, file).startsWith('..'));
 
       for (const file of files) {
         const compilerParams = createCompileParams(file, projectConfig, input);
-        expect(compiler).toHaveBeenCalledWith(compilerParams);
+        expect(compilerMock).toHaveBeenCalledWith(compilerParams);
       }
     }
   });
@@ -403,7 +404,7 @@ describe('Builder', () => {
     const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
 
-    process.chdir(project.projectPath);
+    process.chdir(project.path);
 
     const projectConfig = await ProjectConfig.resolve(
       config.defaultProjectType,
@@ -444,7 +445,7 @@ describe('Builder', () => {
     const project = createProject(TEST_DIR);
     await project.initDir([...projectFiles, ...extraProjectFiles]);
 
-    process.chdir(project.projectPath);
+    process.chdir(project.path);
 
     const projectConfig = await ProjectConfig.resolve(
       config.defaultProjectType,
@@ -487,7 +488,7 @@ describe('Builder', () => {
     const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
 
-    process.chdir(project.projectPath);
+    process.chdir(project.path);
 
     const projectConfig = await ProjectConfig.resolve(
       config.defaultProjectType,
@@ -513,6 +514,58 @@ describe('Builder', () => {
     }
   });
 
+  it('should detect changes of asset files', async () => {
+    const assetsDir = './assets';
+    const projectFiles = [
+      path.join(assetsDir, 'models/test.mdl'),
+      path.join(assetsDir, 'sprites/test.spr'),
+      path.join(assetsDir, 'sound/test.wav'),
+      path.join(assetsDir, 'maps/test.bsp')
+    ];
+
+    const project = createProject(TEST_DIR);
+    await project.initDir(projectFiles);
+
+    process.chdir(project.path);
+
+    const projectConfig = await ProjectConfig.resolve(
+      config.defaultProjectType,
+      { input: { assets: assetsDir } }
+    );
+
+    const resolveDestPath = (filePath: string) => path.join(
+      projectConfig.output.assets,
+      path.relative(assetsDir, filePath)
+    );
+
+    const expectFileCopied = (filePath: string) => {
+      expect(copyFile).toHaveBeenCalledWith(
+        path.join(projectConfig.path, filePath),
+        resolveDestPath(filePath)
+      );
+    };
+
+    const builder = new AmxxBuilder(projectConfig);
+    
+    await builder.buildAssets();
+
+    expect(copyFile).toHaveBeenCalledTimes(projectFiles.length);
+
+    copyFile.mockClear();
+
+    await fs.promises.writeFile(path.join(projectConfig.path, projectFiles[0]), 'somecontent-1');
+    await fs.promises.writeFile(resolveDestPath(projectFiles[1]), 'somecontent-2');
+    await fs.promises.unlink(resolveDestPath(projectFiles[2]));
+
+    await builder.buildAssets();
+
+    expect(copyFile).toHaveBeenCalledTimes(3);
+
+    expectFileCopied(projectFiles[0])
+    expectFileCopied(projectFiles[1]);
+    expectFileCopied(projectFiles[2]);
+  });
+
   it('should call update functions only with absolute paths', async () => {
     const assetsDir = './src/scripts';
     const scriptsDir = './src/scripts';
@@ -534,7 +587,7 @@ describe('Builder', () => {
     const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
 
-    process.chdir(project.projectPath);
+    process.chdir(project.path);
 
     const projectConfig = await ProjectConfig.resolve(
       config.defaultProjectType,

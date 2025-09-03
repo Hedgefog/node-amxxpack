@@ -20,7 +20,7 @@ export enum CacheValueType {
   Dependents = 'dependents'
 }
 
-export default class PluginsCache {
+export default class Cache {
   private cache: NodeCache;
   private ignoredIncludesSet: Set<string>;
 
@@ -52,11 +52,11 @@ export default class PluginsCache {
   }
 
   public async isRelevantSrc(srcPath: string): Promise<boolean> {
-    const srcCachedHash = this.cache.get(this.getFileCacheKey(srcPath, CacheValueType.Hash));
-    if (!srcCachedHash) return false;
+    const cachedHash = this.cache.get(this.getFileCacheKey(srcPath, CacheValueType.Hash));
+    if (!cachedHash) return false;
 
-    const srcHash = await this.createFileHash(srcPath);
-    if (srcHash !== srcCachedHash) return false;
+    const hash = await this.createFileHash(srcPath);
+    if (hash !== cachedHash) return false;
 
     const dependencies = await this.getDependencies(srcPath);
     const dependenciesHash = await this.getFilesHash(dependencies.items);
@@ -65,12 +65,12 @@ export default class PluginsCache {
     return true;
   }
 
-  public async isRelevantPlugin(pluginPath: string): Promise<boolean> {
-    const pluginHash = await this.createFileHash(pluginPath);
-    if (!pluginHash) return false;
+  public async isRelevantFile(filePath: string): Promise<boolean> {
+    const hash = await this.createFileHash(filePath);
+    if (!hash) return false;
 
-    const pluginCachedHash = this.cache.get(this.getFileCacheKey(pluginPath, CacheValueType.Hash));
-    if (pluginHash !== pluginCachedHash) return false;
+    const cachedHash = this.cache.get(this.getFileCacheKey(filePath, CacheValueType.Hash));
+    if (hash !== cachedHash) return false;
 
     return true;
   }
