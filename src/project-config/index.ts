@@ -97,16 +97,16 @@ function resolve(type: string, overrides: PartialDeep<IProjectConfig>, projectDi
 
   const resolveInput = (input: string | IInput, output: IResolvedOutput): IResolvedInput => {
     return isObject(input) 
-    ? {
-      dir: resolveProjectPath(input.dir),
-      filter: input.filter ? castArray(input.filter) : [],
-      output: output ? merge({}, input.output || {}, output) : null
-    }
-    : {
-      dir: resolveProjectPath(input),
-      filter: [],
-      output: output
-    };
+      ? {
+        dir: resolveProjectPath(input.dir),
+        filter: input.filter ? castArray(input.filter) : [],
+        output: output ? merge({}, output, input.output || {}) : null
+      }
+      : {
+        dir: resolveProjectPath(input),
+        filter: [],
+        output: output
+      };
   };
 
   const flatCompilation = projectConfig.rules.flatCompilation ?? true;

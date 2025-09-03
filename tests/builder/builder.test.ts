@@ -36,7 +36,7 @@ function createCompileParams(fileName: string, projectConfig: IResolvedProjectCo
   const outputOptions = {
     prefix: inputConfig?.output?.prefix || projectConfig.output.plugins.prefix,
     dest: inputConfig?.output?.dest || projectConfig.output.plugins.dest,
-    flat: inputConfig?.output?.flat || projectConfig.output.plugins.flat,
+    flat: inputConfig?.output?.flat ?? projectConfig.output.plugins.flat,
   };
 
   const { name } = path.parse(fileName);

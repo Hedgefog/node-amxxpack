@@ -348,4 +348,24 @@ describe('Project Config Resolver', () => {
     expect(projectConfig.output.include).toHaveProperty('dir', outputAbsBaseDir);
     expect(projectConfig.output.assets).toHaveProperty('dir', outputAbsBaseDir);
   });
+
+  it('should override correctly set output options for input', async () => {
+    const outputBaseDir = './dist';
+    const outputOverride = { dest: 'input-dest', flat: true, prefix: 'input-prefix' };
+
+    const projectConfig = ProjectConfig.resolve(config.defaultProjectType, {
+      input: {
+        scripts: { dir: 'scripts', output: outputOverride },
+      },
+      output: {
+        base: outputBaseDir,
+        scripts: { dir: '.', dest: 'output-dest', flat: false, prefix: 'output-prefix' }
+      }
+    }, projectDir);
+
+    expect(projectConfig.input.scripts[0]).toHaveProperty('output');
+    expect(projectConfig.input.scripts[0].output).toHaveProperty('dest', outputOverride.dest);
+    expect(projectConfig.input.scripts[0].output).toHaveProperty('flat', outputOverride.flat);
+    expect(projectConfig.input.scripts[0].output).toHaveProperty('prefix', outputOverride.prefix);
+  });
 });
