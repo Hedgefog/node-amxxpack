@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import { exec } from 'child_process';
 import { mkdirp } from 'mkdirp';
-import { get, map, merge } from 'lodash';
+import { get, merge } from 'lodash';
 
 import ProjectConfig from '../../project-config';
 import { IProjectOptions } from '../types';
@@ -10,7 +10,6 @@ import { IResolvedProjectConfig } from '../../types';
 import config from '../../config';
 import logger from '../../logger/logger';
 import CLIError from '../../common/cli-error';
-// import { CompilerType } from '../../constants';
 
 class ProjectCreator {
   public projectDir: string = null;
@@ -116,14 +115,16 @@ class ProjectCreator {
   public async createDirectories() {
     logger.info('📁 Creating project directories...');
 
-    const dirs = [
-      ...map(this.projectConfig.input.assets, 'dir'),
-      ...this.projectConfig.input.include,
-      ...map(this.projectConfig.input.scripts, 'dir')
-    ];
+    for (const input of this.projectConfig.input.assets) {
+      await mkdirp(input.dir);
+    }
 
-    for (const dir of dirs) {
-      await mkdirp(dir);
+    for (const input of this.projectConfig.input.include) {
+      await mkdirp(input.dir);
+    }
+
+    for (const input of this.projectConfig.input.scripts) {
+      await mkdirp(input.dir);
     }
   }
 
@@ -151,7 +152,7 @@ class ProjectCreator {
     addDir('node_modules');
     addDir(this.projectConfig.compiler.dir);
     addDir(this.projectConfig.thirdparty.dir);
-    addDir(this.projectConfig.output.assets);
+    addDir(this.projectConfig.output.assets.dir);
 
     if (fs.existsSync(filePath)) {
       lines.unshift('');
@@ -179,7 +180,7 @@ class ProjectCreator {
       cwd: this.projectDir
     });
 
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       process.on('error', resolve);
       process.on('close', resolve);
     });

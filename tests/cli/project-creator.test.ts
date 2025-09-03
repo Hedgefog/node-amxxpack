@@ -59,8 +59,8 @@ describe('Project Creator', () => {
       expect(fs.existsSync(assetInput.dir)).toBe(true);
     }
 
-    for (const dir of projectConfig.input.include) {
-      expect(fs.existsSync(dir)).toBe(true);
+    for (const input of projectConfig.input.include) {
+      expect(fs.existsSync(input.dir)).toBe(true);
     }
 
     for (const input of projectConfig.input.scripts) {

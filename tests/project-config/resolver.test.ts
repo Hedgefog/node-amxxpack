@@ -1,62 +1,124 @@
 import path from 'path';
 import { isObject, map } from 'lodash';
+import Chance from 'chance';
 
 import { TEST_TMP_DIR } from '../constants';
 import ProjectConfig from '../../src/project-config';
 import config from '../../src/config';
+import { mkdirpSync } from 'mkdirp';
+import { IProjectConfig } from '../../src/types';
 
-const PROJECT_DIR = TEST_TMP_DIR;
+const chance = new Chance();
+
+const TEST_DIR = path.join(TEST_TMP_DIR, 'config-resolver');
+
+function resolveDefaultFlatValue(key: keyof IProjectConfig['output']) {
+  switch (key) {
+    case 'scripts': return true;
+    case 'include': return true;
+    case 'assets': return false;
+  }
+
+  return false;
+}
 
 describe('Project Config Resolver', () => {
-  it('should resolve scripts input', async () => {
-    const overrides = {
-      input: {
-        scripts: [
-          'scripts',
-          { dir: 'scripts2' },
-          { dir: 'scripts3', flat: true },
-        ],
-        include: 'include',
-        assets: 'assets',
-      },
-      rules: { flatCompilation: false }
-    };
+  let projectDir: string = '';
 
-    const resolvePath = (p: string) => path.resolve(PROJECT_DIR, p);
+  const resolveProjectPath = (p: string) => path.resolve(projectDir, p);
 
-    const projectConfig = ProjectConfig.resolve(config.defaultProjectType, overrides, PROJECT_DIR);
-
-    for (const input of projectConfig.input.scripts) {
-      expect(input).toHaveProperty('dir', resolvePath(isObject(input) ? input.dir : input));
-      expect(input).toHaveProperty('dest', isObject(input) ? input.dest ?? '.' : '.');
-      expect(input).toHaveProperty('flat', isObject(input) ? input.flat ?? overrides.rules.flatCompilation : overrides.rules.flatCompilation);
-      expect(input).toHaveProperty('prefix', isObject(input) ? input.prefix ?? '' : '');
-    }
-  });
-
-  it('should resolve assets input', async () => {
-    const overrides = {
-      input: {
-        assets: [
-          'assets',
-        ],
-      },
-    };
-
-    const resolvePath = (p: string) => path.resolve(PROJECT_DIR, p);
-
-    const projectConfig = ProjectConfig.resolve(config.defaultProjectType, overrides, PROJECT_DIR);
-
-    for (const input of projectConfig.input.assets) {
-      expect(input).toHaveProperty('dir', resolvePath(isObject(input) ? input.dir : input));
-      expect(input).toHaveProperty('dest', isObject(input) ? input.dest ?? '.' : '.');
-      expect(input).toHaveProperty('flat', false);
-      expect(input).toHaveProperty('filter', isObject(input) ? input.filter ?? [] : []);
-    }
+  beforeEach(() => {    
+    projectDir = path.join(TEST_DIR, chance.word({ length: 8 }));
   });
   
+  for (const key of ['scripts', 'include', 'assets'] as const) {
+    describe(`input ${key}`, () => {
+      it('should resolve input with defaults', async () => {
+        const overrides = {
+          input: {
+            [key]: [
+              'directory1',
+              { dir: 'directory2' },
+              { dir: 'directory3' },
+            ]
+          },
+          rules: { flatCompilation: false }
+        };
+    
+    
+        const projectConfig = ProjectConfig.resolve(config.defaultProjectType, overrides, projectDir);
+    
+        for (const input of projectConfig.input[key]) {
+          expect(input).toHaveProperty('dir', resolveProjectPath(isObject(input) ? input['dir'] : input));
+          expect(input).toHaveProperty('filter', []);
+          expect(input).toHaveProperty('output', {
+            dir: projectConfig.output[key]!.dir,
+            dest: '.',
+            flat: resolveDefaultFlatValue(key),
+            prefix: '',
+          });
+        }
+      });
+    
+      it('should resolve input with overrides', async () => {
+        const overrides = {
+          input: {
+            [key]: [
+              { dir: './directory1', output: { dest: 'sub1', flat: true, prefix: 'prefix1_' } },
+              { dir: './directory2', output: { dest: 'sub2', flat: false, prefix: 'prefix2_' } },
+            ]
+          },
+          rules: { flatCompilation: false }
+        };
+    
+        const projectConfig = ProjectConfig.resolve(config.defaultProjectType, overrides, projectDir);
+    
+        for (const input of projectConfig.input[key]) {
+          expect(input).toHaveProperty('dir', resolveProjectPath(isObject(input) ? input['dir'] : input));
+          expect(input).toHaveProperty('filter', []);
+          expect(input).toHaveProperty('output', input.output);
+        }
+      });
+    });
+
+    describe(`output ${key}`, () => {
+      it('should resolve output with defaults', async () => {
+        const overrides = {
+          output: {
+            base: './dist',
+            [key]: './directory',
+          },
+          rules: { flatCompilation: false }
+        };
+
+        const projectConfig = ProjectConfig.resolve(config.defaultProjectType, overrides, projectDir);
+
+        expect(projectConfig.output[key]).toHaveProperty('flat', resolveDefaultFlatValue(key));
+        expect(projectConfig.output[key]).toHaveProperty('dir', resolveProjectPath(path.join(overrides.output.base, overrides.output[key])));
+        expect(projectConfig.output[key]).toHaveProperty('dest', '.');
+        expect(projectConfig.output[key]).toHaveProperty('prefix', '');
+      });
+
+      it('should resolve output with overrides', async () => {
+        const output = { dir: './directory', dest: 'sub1', flat: true, prefix: 'prefix1_' };
+
+        const overrides = {
+          output: { base: './dist', [key]: output },
+          rules: { flatCompilation: false }
+        };
+
+        const projectConfig = ProjectConfig.resolve(config.defaultProjectType, overrides, projectDir);
+
+        expect(projectConfig.output[key]).toHaveProperty('dir', resolveProjectPath(path.join(overrides.output.base, output.dir)));
+        expect(projectConfig.output[key]).toHaveProperty('dest', output.dest);
+        expect(projectConfig.output[key]).toHaveProperty('flat', output.flat);
+        expect(projectConfig.output[key]).toHaveProperty('prefix', output.prefix);
+      });
+    });
+  }
+  
   it('should resolve undefined paths as defaults', async () => {
-    const defaultConfig = ProjectConfig.resolve(config.defaultProjectType,{}, PROJECT_DIR);
+    const defaultConfig = ProjectConfig.resolve(config.defaultProjectType,{}, projectDir);
 
     const projectConfig = ProjectConfig.resolve(config.defaultProjectType, {
       input: {
@@ -73,7 +135,7 @@ describe('Project Config Resolver', () => {
       compiler: { dir: undefined },
       thirdparty: { dir: undefined },
       include: undefined
-    }, PROJECT_DIR);
+    }, projectDir);
 
     expect(projectConfig).toEqual(defaultConfig);
   });
@@ -86,7 +148,7 @@ describe('Project Config Resolver', () => {
         include: null,
         assets: null
       }
-    }, PROJECT_DIR);
+    }, projectDir);
 
     expect(projectConfig.output.scripts).toBeNull();
     expect(projectConfig.output.plugins).toBeNull();
@@ -112,50 +174,50 @@ describe('Project Config Resolver', () => {
       thirdparty: { dir: '' },
       include: [''],
       rules: { flatCompilation: false }
-    }, PROJECT_DIR);
+    }, projectDir);
 
     expect(projectConfig.input.scripts).toHaveLength(1);
-    expect(projectConfig.input.scripts[0]).toHaveProperty('dir', PROJECT_DIR);
+    expect(projectConfig.input.scripts[0]).toHaveProperty('dir', projectDir);
     
     expect(projectConfig.input.include).toHaveLength(1);
-    expect(projectConfig.input.include[0]).toBe(PROJECT_DIR);
+    expect(projectConfig.input.include[0]).toHaveProperty('dir', projectDir);
 
     expect(projectConfig.input.assets).toHaveLength(1);
-    expect(projectConfig.input.assets[0]).toHaveProperty('dir', PROJECT_DIR);
+    expect(projectConfig.input.assets[0]).toHaveProperty('dir', projectDir);
 
-    expect(projectConfig.output.scripts).toBe(PROJECT_DIR);
-    expect(projectConfig.output.plugins).toBe(PROJECT_DIR);
-    expect(projectConfig.output.include).toBe(PROJECT_DIR);
-    expect(projectConfig.output.assets).toBe(PROJECT_DIR);
-    expect(projectConfig.compiler.dir).toBe(PROJECT_DIR);
-    expect(projectConfig.thirdparty.dir).toBe(PROJECT_DIR);
-    expect(projectConfig.include).toEqual([PROJECT_DIR]);
+    expect(projectConfig.output.scripts).toHaveProperty('dir', projectDir);
+    expect(projectConfig.output.plugins).toHaveProperty('dir', projectDir);
+    expect(projectConfig.output.include).toHaveProperty('dir', projectDir);
+    expect(projectConfig.output.assets).toHaveProperty('dir', projectDir);
+    expect(projectConfig.compiler.dir).toBe(projectDir);
+    expect(projectConfig.thirdparty.dir).toBe(projectDir);
+    expect(projectConfig.include).toEqual([projectDir]);
   });
 
   it('should resolve absolute paths', async () => {
     const overrides = {
       input: {
         scripts: [
-          path.resolve(PROJECT_DIR, 'scripts'),
-          { dir: path.resolve(PROJECT_DIR, 'scripts2') },
+          resolveProjectPath('scripts'),
+          { dir: resolveProjectPath('scripts2') },
         ],
-        include: path.resolve(PROJECT_DIR, 'include'),
-        assets: path.resolve(PROJECT_DIR, 'assets'),
+        include: resolveProjectPath('include'),
+        assets: resolveProjectPath('assets'),
       },
       output: {
-        base: path.resolve(PROJECT_DIR, 'out'),
-        scripts: path.resolve(PROJECT_DIR, 'scripts'),
-        plugins: path.resolve(PROJECT_DIR, 'plugins'),
-        include: path.resolve(PROJECT_DIR, 'include'),
-        assets: path.resolve(PROJECT_DIR, 'assets')
+        base: resolveProjectPath('out'),
+        scripts: resolveProjectPath('scripts'),
+        plugins: resolveProjectPath('plugins'),
+        include: resolveProjectPath('include'),
+        assets: resolveProjectPath('assets')
       },
-      compiler: { dir: path.resolve(PROJECT_DIR, 'compiler') },
-      thirdparty: { dir: path.resolve(PROJECT_DIR, 'thirdparty') },
-      include: [path.resolve(PROJECT_DIR, 'extra-include')],
+      compiler: { dir: resolveProjectPath('compiler') },
+      thirdparty: { dir: resolveProjectPath('thirdparty') },
+      include: [resolveProjectPath('extra-include')],
       rules: { flatCompilation: false }
     };
 
-    const projectConfig = ProjectConfig.resolve(config.defaultProjectType, overrides);
+    const projectConfig = ProjectConfig.resolve(config.defaultProjectType, overrides, projectDir);
 
     expect(projectConfig.input.scripts).toHaveLength(overrides.input.scripts.length);
 
@@ -166,11 +228,13 @@ describe('Project Config Resolver', () => {
     expect(projectConfig.input.assets).toHaveLength(1);
     expect(projectConfig.input.assets[0]).toHaveProperty('dir', overrides.input.assets);
 
-    expect(projectConfig.input.include).toEqual([overrides.input.include]);
-    expect(projectConfig.output.scripts).toBe(overrides.output.scripts);
-    expect(projectConfig.output.plugins).toBe(overrides.output.plugins);
-    expect(projectConfig.output.include).toBe(overrides.output.include);
-    expect(projectConfig.output.assets).toBe(overrides.output.assets);
+    expect(projectConfig.input.include).toHaveLength(1);
+    expect(projectConfig.input.include[0]).toHaveProperty('dir', overrides.input.include);
+
+    expect(projectConfig.output.scripts).toHaveProperty('dir', overrides.output.scripts);
+    expect(projectConfig.output.plugins).toHaveProperty('dir', overrides.output.plugins);
+    expect(projectConfig.output.include).toHaveProperty('dir', overrides.output.include);
+    expect(projectConfig.output.assets).toHaveProperty('dir', overrides.output.assets);
     expect(projectConfig.compiler.dir).toBe(overrides.compiler.dir);
     expect(projectConfig.thirdparty.dir).toBe(overrides.thirdparty.dir);
     expect(projectConfig.include).toEqual(overrides.include);
@@ -199,27 +263,27 @@ describe('Project Config Resolver', () => {
       rules: { flatCompilation: false }
     };
 
-    const resolvePath = (p: string) => path.resolve(PROJECT_DIR, p);
-
-    const projectConfig = ProjectConfig.resolve(config.defaultProjectType, overrides, PROJECT_DIR);
+    const projectConfig = ProjectConfig.resolve(config.defaultProjectType, overrides, projectDir);
 
     expect(projectConfig.input.scripts).toHaveLength(overrides.input.scripts.length);
 
     for (const input of projectConfig.input.scripts) {
-      expect(input).toHaveProperty('dir', resolvePath(isObject(input) ? input.dir : input));
+      expect(input).toHaveProperty('dir', resolveProjectPath(isObject(input) ? input.dir : input));
     }
 
     expect(projectConfig.input.assets).toHaveLength(1);
-    expect(projectConfig.input.assets[0]).toHaveProperty('dir', resolvePath(overrides.input.assets));
+    expect(projectConfig.input.assets[0]).toHaveProperty('dir', resolveProjectPath(overrides.input.assets));
 
-    expect(projectConfig.input.include).toEqual([resolvePath(overrides.input.include)]);
-    expect(projectConfig.output.scripts).toBe(resolvePath(overrides.output.scripts));
-    expect(projectConfig.output.plugins).toBe(resolvePath(overrides.output.plugins));
-    expect(projectConfig.output.include).toBe(resolvePath(overrides.output.include));
-    expect(projectConfig.output.assets).toBe(resolvePath(overrides.output.assets));
-    expect(projectConfig.compiler.dir).toBe(resolvePath(overrides.compiler.dir));
-    expect(projectConfig.thirdparty.dir).toBe(resolvePath(overrides.thirdparty.dir));
-    expect(projectConfig.include).toEqual(map(overrides.include, resolvePath));
+    expect(projectConfig.input.include).toHaveLength(1);
+    expect(projectConfig.input.include[0]).toHaveProperty('dir', resolveProjectPath(overrides.input.include));
+
+    expect(projectConfig.output.scripts).toHaveProperty('dir', resolveProjectPath(overrides.output.scripts));
+    expect(projectConfig.output.plugins).toHaveProperty('dir', resolveProjectPath(overrides.output.plugins));
+    expect(projectConfig.output.include).toHaveProperty('dir', resolveProjectPath(overrides.output.include));
+    expect(projectConfig.output.assets).toHaveProperty('dir', resolveProjectPath(overrides.output.assets));
+    expect(projectConfig.compiler.dir).toBe(resolveProjectPath(overrides.compiler.dir));
+    expect(projectConfig.thirdparty.dir).toBe(resolveProjectPath(overrides.thirdparty.dir));
+    expect(projectConfig.include).toEqual(map(overrides.include, resolveProjectPath));
   });
 
   it('should resolve out paths using base dir', async () => {
@@ -235,14 +299,14 @@ describe('Project Config Resolver', () => {
       }
     };
 
-    const projectConfig = ProjectConfig.resolve(config.defaultProjectType, overrides, PROJECT_DIR);
+    const projectConfig = ProjectConfig.resolve(config.defaultProjectType, overrides, projectDir);
 
-    const resolveOutPath = (p: string) => path.resolve(PROJECT_DIR, outputBaseDir, p);
+    const resolveOutPath = (p: string) => resolveProjectPath(path.join(outputBaseDir, p));
 
-    expect(projectConfig.output.scripts).toBe(resolveOutPath(overrides.output.scripts));
-    expect(projectConfig.output.plugins).toBe(resolveOutPath(overrides.output.plugins));
-    expect(projectConfig.output.include).toBe(resolveOutPath(overrides.output.include));
-    expect(projectConfig.output.assets).toBe(resolveOutPath(overrides.output.assets));
+    expect(projectConfig.output.scripts).toHaveProperty('dir', resolveOutPath(overrides.output.scripts));
+    expect(projectConfig.output.plugins).toHaveProperty('dir', resolveOutPath(overrides.output.plugins));
+    expect(projectConfig.output.include).toHaveProperty('dir', resolveOutPath(overrides.output.include));
+    expect(projectConfig.output.assets).toHaveProperty('dir', resolveOutPath(overrides.output.assets));
   });
 
   it('should resolve out paths with null values using base dir', async () => {
@@ -256,7 +320,7 @@ describe('Project Config Resolver', () => {
         include: null,
         assets: null
       }
-    }, PROJECT_DIR);
+    }, projectDir);
 
     expect(projectConfig.output.scripts).toBeNull();
     expect(projectConfig.output.plugins).toBeNull();
@@ -266,7 +330,7 @@ describe('Project Config Resolver', () => {
 
   it('should resolve empty output paths as output base dir', async () => {
     const outputBaseDir = './out';
-    const outputAbsBaseDir = path.resolve(PROJECT_DIR, outputBaseDir);
+    const outputAbsBaseDir = path.resolve(projectDir, outputBaseDir);
 
     const projectConfig = ProjectConfig.resolve(config.defaultProjectType, {
       output: {
@@ -276,12 +340,12 @@ describe('Project Config Resolver', () => {
         include: '',
         assets: ''
       }
-    }, PROJECT_DIR);
+    }, projectDir);
 
 
-    expect(projectConfig.output.scripts).toBe(outputAbsBaseDir);
-    expect(projectConfig.output.plugins).toBe(outputAbsBaseDir);
-    expect(projectConfig.output.include).toBe(outputAbsBaseDir);
-    expect(projectConfig.output.assets).toBe(outputAbsBaseDir);
+    expect(projectConfig.output.scripts).toHaveProperty('dir', outputAbsBaseDir);
+    expect(projectConfig.output.plugins).toHaveProperty('dir', outputAbsBaseDir);
+    expect(projectConfig.output.include).toHaveProperty('dir', outputAbsBaseDir);
+    expect(projectConfig.output.assets).toHaveProperty('dir', outputAbsBaseDir);
   });
 });

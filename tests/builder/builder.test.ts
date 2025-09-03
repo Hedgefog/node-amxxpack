@@ -7,7 +7,7 @@ import { countBy, map, some } from 'lodash';
 import ProjectConfig from '../../src/project-config';
 import AmxxBuilder from '../../src/builder/builder';
 import createProject from '../helpers/create-project';
-import { IResolvedProjectConfig, IScriptInput } from '../../src/types';
+import { IInput, IResolvedProjectConfig } from '../../src/types';
 import { TEST_TMP_DIR } from '../constants';
 import config from '../../src/config';
 import compilerMock from '../mocks/compiler';
@@ -27,26 +27,33 @@ jest.mock('../../src/builder/compiler', () => {
 
 const copyFile = jest.spyOn(jest.requireActual('../../src/utils/copy-file'), 'default');
 
-function createCompileParams(fileName: string, projectConfig: IResolvedProjectConfig, inputConfig?: IScriptInput) {
-  inputConfig = inputConfig ?? projectConfig.input.scripts[0];
-  const flatCompilation = inputConfig?.flat ?? projectConfig.rules.flatCompilation;
+function createCompileParams(fileName: string, projectConfig: IResolvedProjectConfig, inputConfig?: IInput) {
+  if (!projectConfig.output.plugins) return null;
+
+  inputConfig = inputConfig ?? projectConfig.input.scripts[0] as IInput;
   const filePath = path.join(projectConfig.path, fileName);
+
+  const outputOptions = {
+    prefix: inputConfig?.output?.prefix || projectConfig.output.plugins.prefix,
+    dest: inputConfig?.output?.dest || projectConfig.output.plugins.dest,
+    flat: inputConfig?.output?.flat || projectConfig.output.plugins.flat,
+  };
 
   const { name } = path.parse(fileName);
 
   return {
     path: filePath,
     dest: path.resolve(
-      projectConfig.output.plugins,
-      inputConfig?.dest || '',
-      flatCompilation ? '.' : path.relative(inputConfig?.dir || projectConfig.path, path.dirname(filePath)),
-      `${inputConfig?.prefix || ''}${name}.amxx`
+      projectConfig.output.plugins.dir,
+      outputOptions.dest,
+      outputOptions.flat ? '.' : path.relative(inputConfig?.dir || projectConfig.path, path.dirname(filePath)),
+      `${outputOptions.prefix}${name}.amxx`
     ),
     compiler: path.resolve(projectConfig.compiler.dir, projectConfig.compiler.executable),
     includeDir: [
       path.resolve(projectConfig.compiler.dir, 'include'),
       ...projectConfig.include,
-      ...projectConfig.input.include
+      ...map(projectConfig.input.include, 'dir')
     ]
   };
 }
@@ -133,7 +140,11 @@ describe('Builder', () => {
         ...projectConfig.input,
         include: map(
           [includeDir, ...projectNestedIncludeDirs],
-          (dir) => path.resolve(project.path, dir)
+          (dir) => ({
+            dir: path.resolve(project.path, dir),
+            filter: [],
+            output: projectConfig.output.include
+          })
         )
       }
     });
@@ -209,7 +220,7 @@ describe('Builder', () => {
       await builder.buildScripts();
   
       for (const fileName of scriptFiles) {
-        const compilerParams = createCompileParams(fileName, projectConfig, projectConfig.input.scripts[0]);
+        const compilerParams = createCompileParams(fileName, projectConfig, projectConfig.input.scripts[0] as IInput);
         expect(compilerMock).toHaveBeenCalledWith(compilerParams);
       }
 
@@ -275,7 +286,7 @@ describe('Builder', () => {
 
     process.chdir(project.path);
 
-    const inputConfig = { dir: scriptsDir, flat: true };
+    const inputConfig = { dir: scriptsDir, output:{ flat: true } };
 
     const projectConfig = await ProjectConfig.resolve(
       config.defaultProjectType,{
@@ -394,19 +405,21 @@ describe('Builder', () => {
     const prefix = 'test_';
 
     const projectConfig = await ProjectConfig.resolve(
-      config.defaultProjectType,{
-      input: {
-        scripts: [
-          { dir: scriptsDir, flat: false },
-          { dir: prefixedDir, prefix, flat: false },
-          { dir: flatDir, flat: true },
-          { dir: prefixedFlatDir, prefix, flat: true },
-          { dir: destDir, dest: 'sub', flat: false },
-          { dir: destPrefixedFlatDir, prefix, dest: 'sub', flat: true },
-        ],
-        include: []
+      config.defaultProjectType,
+      {
+        input: {
+          scripts: [
+            { dir: scriptsDir, output: { flat: false } },
+            { dir: prefixedDir, output: { prefix, flat: false } },
+            { dir: flatDir, output: { flat: true } },
+            { dir: prefixedFlatDir, output: { prefix, flat: true } },
+            { dir: destDir, output: { dest: 'sub', flat: false } },
+            { dir: destPrefixedFlatDir, output: { prefix, dest: 'sub', flat: true } },
+          ],
+          include: []
+        }
       }
-    });
+    );
     
     const builder = new AmxxBuilder(projectConfig);
 
@@ -460,7 +473,7 @@ describe('Builder', () => {
     for (const fileName of projectFiles) {
       expect(builder.updateAsset).toHaveBeenCalledWith(
         path.resolve(fileName),
-        { dir: path.resolve(assetsDir), flat: false, filter: [], dest: '.' }
+        { dir: path.resolve(assetsDir), filter: [], output: projectConfig.output.assets }
       );
     }
   });
@@ -501,14 +514,14 @@ describe('Builder', () => {
     for (const fileName of projectFiles) {
       expect(builder.updateAsset).toHaveBeenCalledWith(
         path.resolve(fileName),
-        { dir: path.resolve(assetsDir), flat: false, filter: [], dest: '.' }
+        { dir: path.resolve(assetsDir), filter: [], output: projectConfig.output.assets }
       );
     }
 
     for (const fileName of extraProjectFiles) {
       expect(builder.updateAsset).toHaveBeenCalledWith(
         path.resolve(fileName),
-        { dir: path.resolve(extraAssetsDir), flat: false, filter: [], dest: '.' }
+        { dir: path.resolve(extraAssetsDir), filter: [], output: projectConfig.output.assets }
       );
     }
   });
@@ -542,7 +555,7 @@ describe('Builder', () => {
 
     for (const fileName of projectFiles) {
       const destFilePath = path.join(
-        projectConfig.output.assets,
+        projectConfig.output.assets!.dir,
         path.relative(assetsDir, fileName)
       );
 
@@ -575,7 +588,7 @@ describe('Builder', () => {
     );
 
     const resolveDestPath = (filePath: string) => path.join(
-      projectConfig.output.assets,
+      projectConfig.output.assets!.dir,
       path.relative(assetsDir, filePath)
     );
 

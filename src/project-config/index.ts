@@ -3,7 +3,7 @@ import { castArray, isNull, isObject, map, merge } from 'lodash';
 import path from 'path';
 import fs from 'fs';
 
-import { IAssetInput, IInput, IProjectConfig, IResolvedProjectConfig, IScriptInput } from '../types';
+import { IInput, IOutput, IOutputOptions, IProjectConfig, IResolvedInput, IResolvedOutput, IResolvedProjectConfig } from '../types';
 import { ICompilerConfig } from './types';
 import CLIError from '../common/cli-error';
 import config from '../config';
@@ -68,65 +68,77 @@ function resolve(type: string, overrides: PartialDeep<IProjectConfig>, projectDi
   const compilerConfig = getCompilerConfig(type);
   const defaults = resolveDefaults(type, compilerConfig);
   const projectConfig: IProjectConfig = merge({}, defaults, overrides);
-  const flatCompilation = projectConfig.rules.flatCompilation ?? true;
 
-  const resolvePath = (p: string) => path.resolve(projectDir, p);
+  const resolveProjectPath = (p: string) => path.resolve(projectDir, p);
 
-  const resolveOutputPath = (p: string) => (
-    isNull(p) ? null : path.resolve(projectDir, projectConfig.output.base || '', p)
-  );
-
-  const resolveInput = (input: string | IInput): Required<IInput> => {
-    return isObject(input) 
-    ? {
-      ...input,
-      dir: path.resolve(projectDir, input.dir || ''),
-      flat: input.flat ?? flatCompilation,
-      dest: input.dest ?? '.',
-    }
-    : {
-      dir: path.resolve(projectDir, input),
-      flat: flatCompilation,
+  const resolveOutputOptions = (p?: IOutputOptions, defaults?: IOutputOptions): Required<IOutputOptions> => {
+    return merge({
       dest: '.',
+      flat: false,
+      prefix: '',
+    }, defaults, p);
+  };
+
+  const resolveOutput = (p: string | IOutput, defaults?: IOutputOptions): IResolvedOutput => {
+    if (isNull(p)) return null;
+
+    if (typeof p === 'object') {
+      return {
+        ...resolveOutputOptions(p, defaults),
+        dir: path.resolve(projectDir, projectConfig.output.base || '.', p.dir),
+      };
+    }
+
+    return {
+      ...resolveOutputOptions(null, defaults),
+      dir: path.resolve(projectDir, projectConfig.output.base || '.', p),
     };
   };
 
-  const resolveScriptInput = (input: string | IScriptInput): Required<IScriptInput> => ({
-    ...resolveInput(input),
-    prefix: isObject(input) ? input.prefix ?? '' : '',
-  });
+  const resolveInput = (input: string | IInput, output: IResolvedOutput): IResolvedInput => {
+    return isObject(input) 
+    ? {
+      dir: resolveProjectPath(input.dir),
+      filter: input.filter ? castArray(input.filter) : [],
+      output: output ? merge({}, input.output || {}, output) : null
+    }
+    : {
+      dir: resolveProjectPath(input),
+      filter: [],
+      output: output
+    };
+  };
 
-  const resolveAssetInput = (input: string | IAssetInput): Required<IAssetInput> => ({
-    ...resolveInput(input),
-    flat: false,
-    filter: isObject(input) ? input.filter ?? [] : [],
-  });
+  const flatCompilation = projectConfig.rules.flatCompilation ?? true;
+
+  const output = {
+    base: resolveProjectPath(projectConfig.output.base),
+    scripts: resolveOutput(projectConfig.output.scripts, { flat: true }),
+    plugins: resolveOutput(projectConfig.output.plugins, { flat: flatCompilation }),
+    include: resolveOutput(projectConfig.output.include, { flat: true }),
+    assets: resolveOutput(projectConfig.output.assets, { flat: false })
+  };
 
   return merge(projectConfig, {
     type,
     path: projectDir,
     defaults,
     input: {
-      scripts: map(castArray(projectConfig.input.scripts), resolveScriptInput),
-      include: map(castArray(projectConfig.input.include), resolvePath),
-      assets: map(castArray(projectConfig.input.assets), resolveAssetInput)
+      scripts: map(castArray(projectConfig.input.scripts), input => resolveInput(input, output?.scripts)),
+      include: map(castArray(projectConfig.input.include), input => resolveInput(input, output?.include)),
+      assets: map(castArray(projectConfig.input.assets), input => resolveInput(input, output.assets))
     },
-    output: {
-      scripts: resolveOutputPath(projectConfig.output.scripts),
-      plugins: resolveOutputPath(projectConfig.output.plugins),
-      include: resolveOutputPath(projectConfig.output.include),
-      assets: resolveOutputPath(projectConfig.output.assets)
-    },
-    include: map(projectConfig.include, resolvePath),
+    output,
+    include: map(projectConfig.include, resolveProjectPath),
     compiler: {
-      dir: resolvePath(projectConfig.compiler.dir),
+      dir: resolveProjectPath(projectConfig.compiler.dir),
       config: compilerConfig
     },
     thirdparty: {
-      dir: resolvePath(projectConfig.thirdparty.dir),
+      dir: resolveProjectPath(projectConfig.thirdparty.dir),
       dependencies: map(
         projectConfig.thirdparty.dependencies,
-        (dependency) => ({
+        dependency => ({
           ...dependency,
           strip: dependency.strip || 0
         })
