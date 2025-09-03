@@ -13,8 +13,7 @@ program
   .name('AMXXPack CLI')
   .description('Simple AmxModX CLI');
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-program.version(require('../../package.json').version);
+program.version(config.version);
 
 program
   .command('create')
