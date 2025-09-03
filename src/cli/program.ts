@@ -36,7 +36,7 @@ program
   .command('config')
   .option('--type, -t <type>', 'Project type', config.defaultProjectType)
   .action(
-    commandAction(async (options) => {
+    commandAction(async options => {
       const { type } = options;
       const projectDir = process.cwd();
       await controller.config(projectDir, type);

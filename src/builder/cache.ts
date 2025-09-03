@@ -139,7 +139,7 @@ export default class Cache {
       }
     }
 
-    const dependencies = Array.from(dependenciesSet)
+    const dependencies = Array.from(dependenciesSet);
     this.cache.set(cacheKey, dependencies);
 
     const dependenciesHash = await this.getFilesHash(dependencies);

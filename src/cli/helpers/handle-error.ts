@@ -1,5 +1,5 @@
-import { CommanderError } from "commander";
-import logger from "../../logger/logger";
+import { CommanderError } from 'commander';
+import logger from '../../logger/logger';
 
 function resolveCommanderError(err: CommanderError): boolean {
   switch (err.code) {

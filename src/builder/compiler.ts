@@ -62,7 +62,7 @@ function buildMessageRegExp() {
     code,
     /:\s/,
     text
-  ].map((r) => r.toString().slice(1, -1)).join('');
+  ].map(r => r.toString().slice(1, -1)).join('');
 
   return new RegExp(pattern);
 }
@@ -129,7 +129,7 @@ function compile(params: ICompileParams): Promise<ICompileResult> {
 
   mkdirp.sync(parsedDest.dir);
 
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const output = stringAccumulator();
 
     const done = (error: Error) => {

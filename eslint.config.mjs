@@ -1,5 +1,6 @@
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
+import stylistic from '@stylistic/eslint-plugin';
 
 export default tseslint.config(
   {
@@ -19,6 +20,11 @@ export default tseslint.config(
     }
   },
   {
+    plugins: {
+      '@stylistic': stylistic
+    }
+  },
+  {
     rules: {
       '@typescript-eslint/no-unused-vars': [
         'warn', // or 'error'
@@ -27,7 +33,12 @@ export default tseslint.config(
           varsIgnorePattern: '^_',
           caughtErrorsIgnorePattern: '^_'
         }
-      ]
+      ],
+      '@stylistic/semi': ['error', 'always'],
+      '@stylistic/quotes': ['warn', 'single'],
+      '@stylistic/arrow-parens': ['warn', 'as-needed'],
+      '@stylistic/block-spacing': ['warn', 'always'],
+      '@stylistic/eol-last': ['warn', 'always']
     }
   }
 );

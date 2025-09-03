@@ -1,4 +1,4 @@
-import logger from "../logger/logger";
+import logger from '../logger/logger';
 
 export default class PluginsDependencies {
   private headersMap = new Map<string, Set<string>>();

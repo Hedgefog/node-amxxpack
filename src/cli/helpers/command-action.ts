@@ -1,4 +1,4 @@
-import handleError from "./handle-error";
+import handleError from './handle-error';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function commandAction<T>(fn: (...args: any[]) => Promise<void>) {

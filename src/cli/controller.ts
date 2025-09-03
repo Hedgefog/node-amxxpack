@@ -164,7 +164,7 @@ class Controller {
 
     fs.promises.rm(config.downloadDir, { recursive: true, force: true });
 
-    logger.info("🧹 Cache cleaned!");
+    logger.info('🧹 Cache cleaned!');
   }
 }
 

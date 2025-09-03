@@ -36,7 +36,7 @@ class Logger {
     }
 
     const message = args
-      .map((arg) => (
+      .map(arg => (
         (arg instanceof Object) ? JSON.stringify(arg) : arg
       ))
       .join(' ');

@@ -16,7 +16,7 @@ function setupWatch(dir: string | string[]) {
     process.exit(0);
   });
 
-  watcher.on('error', (err) => {
+  watcher.on('error', err => {
     console.error('Watcher failure', err);
     process.exit(1);
   });

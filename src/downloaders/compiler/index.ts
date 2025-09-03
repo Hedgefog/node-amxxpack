@@ -19,7 +19,7 @@ export default class CompilerDownloader {
   
   async download(): Promise<void> {
     const { compiler: compilerOpts } = this.projectConfig;
-    const compilerPath = compilerOpts.dir
+    const compilerPath = compilerOpts.dir;
   
     const distNames = [...compilerOpts.addons];
   
@@ -29,7 +29,7 @@ export default class CompilerDownloader {
       distNames.unshift(baseDist);
     }
   
-    const dists = map(distNames, (distName) => this.resolveDist({
+    const dists = map(distNames, distName => this.resolveDist({
       type: this.projectConfig.type,
       name: distName,
       version: compilerOpts.version,
@@ -69,7 +69,7 @@ export default class CompilerDownloader {
     await mkdirp(outDir);
 
     await decompress(archivePath, outDir, {
-      map: (file) => {
+      map: file => {
         const newFile = { ...file };
         const filePath = normalizePath(newFile.path);
         if (filePath.startsWith(this.projectConfig.compiler.config.downloader.compilerDir)) {
@@ -78,7 +78,7 @@ export default class CompilerDownloader {
   
         return newFile;
       },
-      filter: (file) => {
+      filter: file => {
         const filePath = normalizePath(file.path);
         if (!filePath.startsWith(this.projectConfig.compiler.config.downloader.compilerDir)) {
           return false;
