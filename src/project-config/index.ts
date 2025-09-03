@@ -9,7 +9,7 @@ import CLIError from '../common/cli-error';
 import config from '../config';
 
 function getCompilerConfig(type: string): ICompilerConfig {
-  const configPath = path.resolve(__dirname, '..', '..', 'project-types', `${type}.json`);
+  const configPath = path.resolve(__dirname, '..', '..', 'resources', 'project-types', `${type}.json`);
   if (!fs.existsSync(configPath)) {
     throw new CLIError(`Unsupported project type: ${type}`);
   }
