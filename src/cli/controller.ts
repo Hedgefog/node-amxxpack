@@ -129,7 +129,7 @@ class Controller {
       }
       case FileType.Include: {
         await templateBuilder.createFileFromTemplate(
-          resolveFilePath(projectConfig.input.include, fileName, fileExtensions.include),
+          resolveFilePath(map(projectConfig.input.include, 'dir'), fileName, fileExtensions.include),
           'include',
           options.overwrite
         );
@@ -144,7 +144,7 @@ class Controller {
         );
 
         await templateBuilder.createFileFromTemplate(
-          resolveFilePath(projectConfig.input.include, includeName, fileExtensions.include),
+          resolveFilePath(map(projectConfig.input.include, 'dir'), includeName, fileExtensions.include),
           'library-include',
           options.overwrite
         );
