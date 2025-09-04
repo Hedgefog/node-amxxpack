@@ -39,35 +39,6 @@ export default class AmxxBuilder {
     this.assetsPathPattern = '**/*.*';
   }
 
-  async build(): Promise<void> {
-    logger.info('⚒️ Building...');
-
-    try {
-      await this.buildAssets();
-      await this.buildInclude();
-
-      const success = await this.buildScripts();
-
-      if (success) {
-        logger.success('Build completed successfully!');
-      } else {
-        logger.error('Build completed with errors!');
-      }
-
-      if (this.cache) {
-        this.cache.save(config.cacheFile);
-      }
-    } catch (err: unknown) {
-      throw new CLIError(`Build failed! Error: ${err instanceof Error ? err.message : String(err)}`);
-    }
-  }
-
-  async watch(): Promise<void> {
-    await this.watchAssets();
-    await this.watchInclude();
-    await this.watchScripts();
-  }
-
   async buildScripts(options: { pattern?: string } = {}): Promise<boolean> {
     const { fileExtensions } = this.projectConfig.compiler.config;
 

@@ -62,10 +62,25 @@ program
   .option('--watch, -w', 'Watch project')
   .option('--ignore, -i', 'Ignore build errors')
   .option('--no-cache', 'Disable caching')
+  .option('--assets', 'Build assets')
+  .option('--scripts', 'Build scripts')
+  .option('--plugins', 'Build plugins')
+  .option('--includes', 'Build includes')
   .action(
     commandAction(async (_argument: string, options) => {
-      const { config: configPath, watch, ignore: ignoreErrors, cache } = options.opts();
-      await controller.build(configPath, { watch, ignoreErrors, noCache: !cache });
+      const { config: configPath, watch, ignore: ignoreErrors, cache, assets, scripts, plugins, includes } = options.opts();
+
+      const fullBuild = !assets && !scripts && !plugins && !includes;
+
+      await controller.build(configPath, {
+        watch,
+        ignoreErrors,
+        noCache: !cache,
+        assets: fullBuild || assets,
+        scripts: fullBuild || scripts,
+        plugins: fullBuild || plugins,
+        includes: fullBuild || includes
+      });
     })
   );
 

@@ -53,6 +53,10 @@ class Controller {
       watch: boolean;
       ignoreErrors: boolean;
       noCache: boolean;
+      assets: boolean;
+      scripts: boolean;
+      plugins: boolean;
+      includes: boolean;
     }
   ): Promise<void> {
     const builder = await this.createBuilder(configPath, {
@@ -60,11 +64,43 @@ class Controller {
       ignoreErrors: options.ignoreErrors
     });
 
+    logger.info('⚒️ Building...');
+
     if (options.watch) {
-      await builder.watch();
+      if (options.assets) {
+        await builder.watchAssets();
+      }
+      
+      if (options.includes) {
+        await builder.watchInclude();
+      }
+
+      if (options.scripts) {
+        await builder.watchScripts();
+      }
     }
 
-    await builder.build();
+    try {
+      let success = true;
+
+      if (options.assets) {
+        await builder.buildAssets();
+      }
+      if (options.includes) {
+        await builder.buildInclude();
+      }
+      if (options.scripts) {
+        success = await builder.buildScripts();
+      }
+
+      if (success) {
+        logger.success('Build completed successfully!');
+      } else {
+        logger.error('Build completed with errors!');
+      }
+    } catch (err: unknown) {
+      throw new CLIError(`Build failed! Error: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
   public async install(configPath: string, options: { compiler: boolean; thirdparty: boolean }): Promise<void> {
