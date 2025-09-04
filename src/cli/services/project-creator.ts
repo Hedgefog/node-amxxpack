@@ -115,16 +115,16 @@ class ProjectCreator {
   public async createDirectories() {
     logger.info('📁 Creating project directories...');
 
-    for (const input of this.projectConfig.input.assets) {
-      await mkdirp(input.dir);
+    for (const target of this.projectConfig.targets.assets) {
+      await mkdirp(target.src);
     }
 
-    for (const input of this.projectConfig.input.include) {
-      await mkdirp(input.dir);
+    for (const target of this.projectConfig.targets.include) {
+      await mkdirp(target.src);
     }
 
-    for (const input of this.projectConfig.input.scripts) {
-      await mkdirp(input.dir);
+    for (const target of this.projectConfig.targets.scripts) {
+      await mkdirp(target.src);
     }
   }
 
@@ -152,7 +152,10 @@ class ProjectCreator {
     addDir('node_modules');
     addDir(this.projectConfig.compiler.dir);
     addDir(this.projectConfig.thirdparty.dir);
-    addDir(this.projectConfig.output.assets.dir);
+
+    for (const target of this.projectConfig.targets.assets) {
+      addDir(target.src);
+    }
 
     if (fs.existsSync(filePath)) {
       lines.unshift('');

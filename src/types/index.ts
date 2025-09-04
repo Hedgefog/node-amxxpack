@@ -1,19 +1,16 @@
+import { PartialDeep } from 'type-fest';
 import { ICompilerConfig } from '../project-config/types';
 
-export interface IOutputOptions {
-  dest?: string;
+export interface IOutput {
+  dir?: string;
   flat?: boolean;
   prefix?: string;
-};
-
-export interface IOutput extends IOutputOptions {
-  dir: string;
 };
 
 export interface IInput {
   dir: string;
   filter?: string | string[];
-  output?: IOutputOptions | null;
+  output?: IOutput | null;
 };
 
 export interface IDependency {
@@ -21,7 +18,7 @@ export interface IDependency {
   url: string;
   strip?: number;
   filter?: string | string[];
-  type?: 'file' | 'archive';
+  type?: 'file' | 'archive' | null;
 }
 
 export interface IProjectConfig {
@@ -68,41 +65,36 @@ export interface IProjectConfig {
   };
 }
 
-export type IResolvedOutput = Required<IOutput> | null;
-
-export interface IResolvedInput extends IInput {
+export interface IResolvedTarget {
+  src: string;
+  dest: string;
+  flat: boolean;
+  prefix: string;
   filter: string[];
-  output: IResolvedOutput;
 };
 
-export interface IResolvedProjectConfig extends Required<IProjectConfig> {
+export interface IResolvedProjectConfig {
   path: string;
   type: string;
-  defaults: IProjectConfig;
-  input: {
-    scripts: IResolvedInput[];
-    include: IResolvedInput[];
-    assets: IResolvedInput[];
-  };
-  output: {
-    scripts: IResolvedOutput;
-    plugins: IResolvedOutput;
-    include: IResolvedOutput;
-    assets: IResolvedOutput;
-  };
+  defaults: PartialDeep<IProjectConfig>
   include: string[];
+  cli: IProjectConfig['cli'];
   compiler: IProjectConfig['compiler'] & {
     dir: string;
     config: ICompilerConfig;
   };
   thirdparty: IProjectConfig['thirdparty'] & {
     dir: string;
-    dependencies: (IDependency & {
-      strip: number;
-    })[]
+    dependencies: Required<IDependency>[]
   };
   rules: {
     flatCompilation: boolean;
     rebuildDependents: boolean;
+  };
+  targets: {
+    assets: IResolvedTarget[];
+    include: IResolvedTarget[];
+    scripts: IResolvedTarget[];
+    plugins: IResolvedTarget[];
   };
 }

@@ -120,7 +120,7 @@ class Controller {
     switch (type) {
       case FileType.Script: {
         await templateBuilder.createFileFromTemplate(
-          resolveFilePath(map(projectConfig.input.scripts, 'dir'), fileName, fileExtensions.script),
+          resolveFilePath(map(projectConfig.targets.scripts, 'input'), fileName, fileExtensions.script),
           'script',
           options.overwrite
         );
@@ -129,7 +129,7 @@ class Controller {
       }
       case FileType.Include: {
         await templateBuilder.createFileFromTemplate(
-          resolveFilePath(map(projectConfig.input.include, 'dir'), fileName, fileExtensions.include),
+          resolveFilePath(map(projectConfig.targets.include, 'input'), fileName, fileExtensions.include),
           'include',
           options.overwrite
         );
@@ -138,13 +138,13 @@ class Controller {
       }
       case FileType.Library: {
         await templateBuilder.createFileFromTemplate(
-          resolveFilePath(map(projectConfig.input.scripts, 'dir'), fileName, fileExtensions.script),
+          resolveFilePath(map(projectConfig.targets.scripts, 'input'), fileName, fileExtensions.script),
           'library-script',
           options.overwrite
         );
 
         await templateBuilder.createFileFromTemplate(
-          resolveFilePath(map(projectConfig.input.include, 'dir'), includeName, fileExtensions.include),
+          resolveFilePath(map(projectConfig.targets.include, 'input'), includeName, fileExtensions.include),
           'library-include',
           options.overwrite
         );

@@ -55,16 +55,16 @@ describe('Project Creator', () => {
 
     expect(fs.existsSync(path.join(testProject.path, config.projectConfig))).toBe(true);
 
-    for (const assetInput of projectConfig.input.assets) {
-      expect(fs.existsSync(assetInput.dir)).toBe(true);
+    for (const assetInput of projectConfig.targets.assets) {
+      expect(fs.existsSync(assetInput.src)).toBe(true);
     }
 
-    for (const input of projectConfig.input.include) {
-      expect(fs.existsSync(input.dir)).toBe(true);
+    for (const input of projectConfig.targets.include) {
+      expect(fs.existsSync(input.src)).toBe(true);
     }
 
-    for (const input of projectConfig.input.scripts) {
-      expect(fs.existsSync(input.dir)).toBe(true);
+    for (const input of projectConfig.targets.scripts) {
+      expect(fs.existsSync(input.src)).toBe(true);
     }
 
     expect(fs.existsSync(path.join(testProject.path, 'package.json'))).toBe(true);

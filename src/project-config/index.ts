@@ -1,12 +1,13 @@
 import type { PartialDeep } from 'type-fest';
-import { castArray, isNull, isObject, map, merge } from 'lodash';
+import { castArray, defaults, defaultsDeep, isNil, isNull, isObject, map, pick } from 'lodash';
 import path from 'path';
 import fs from 'fs';
 
-import { IInput, IOutput, IOutputOptions, IProjectConfig, IResolvedInput, IResolvedOutput, IResolvedProjectConfig } from '../types';
-import { ICompilerConfig } from './types';
+import { IInput, IOutput, IProjectConfig, IResolvedProjectConfig, IResolvedTarget, IDependency } from '../types';
 import CLIError from '../common/cli-error';
 import config from '../config';
+
+import { ICompilerConfig } from './types';
 
 function getCompilerConfig(type: string): ICompilerConfig {
   const configPath = path.resolve(__dirname, '..', '..', 'resources', 'project-types', `${type}.json`);
@@ -17,120 +18,104 @@ function getCompilerConfig(type: string): ICompilerConfig {
   return JSON.parse(fs.readFileSync(configPath, 'utf8'));
 }
 
-function resolveDefaults(type: string, compilerConfig: ICompilerConfig): IProjectConfig {
-  return {
-    type,
-    input: {
-      scripts: './src/scripts',
-      include: './src/include',
-      assets: './assets',
-    },
-    output: {
-      base: './dist',
-      scripts: `./addons/${compilerConfig.addonName}/scripting`,
-      plugins: `./addons/${compilerConfig.addonName}/plugins`,
-      include: `./addons/${compilerConfig.addonName}/scripting/include`,
-      assets: './'
-    },
-    compiler: {
-      dir: './.compiler',
-      version: compilerConfig.defaultVersion,
-      dev: false,
-      addons: [],
-      executable: compilerConfig.executable
-    },
-    thirdparty: {
-      dir: './.thirdparty',
-      dependencies: []
-    },
-    include: [],
-    rules: {
-      flatCompilation: true,
-      rebuildDependents: true
-    },
-    cli: {
-      templates: {
-        context: {
-          PLUGIN_VERSION: '1.0.0',
-          PLUGIN_AUTHOR: 'AMXXPack'
-        }
+const resolveDefaults = (type: string, compilerConfig: ICompilerConfig) => ({
+  type,
+  input: {
+    scripts: './src/scripts',
+    include: './src/include',
+    assets: './assets',
+  },
+  output: {
+    base: './dist',
+    scripts: `./addons/${compilerConfig.addonName}/scripting`,
+    plugins: `./addons/${compilerConfig.addonName}/plugins`,
+    include: `./addons/${compilerConfig.addonName}/scripting/include`,
+    assets: './'
+  },
+  compiler: {
+    dir: './.compiler',
+    version: compilerConfig.defaultVersion,
+    dev: false,
+    addons: [] as string[],
+    executable: compilerConfig.executable
+  },
+  thirdparty: {
+    dir: './.thirdparty',
+    dependencies: [] as IDependency[]
+  },
+  include: [] as string[],
+  rules: {
+    flatCompilation: true,
+    rebuildDependents: true
+  },
+  cli: {
+    templates: {
+      context: {
+        PLUGIN_VERSION: '1.0.0',
+        PLUGIN_AUTHOR: 'AMXXPack'
       }
     }
-  };
-}
-
-
+  }
+} as const);
 
 function resolve(type: string, overrides: PartialDeep<IProjectConfig>, projectDir?: string): IResolvedProjectConfig {
-  // Make sure projectDir is defined and is an absolute path
   projectDir = projectDir ? path.resolve(projectDir) : process.cwd();
 
   const compilerConfig = getCompilerConfig(type);
-  const defaults = resolveDefaults(type, compilerConfig);
-  const projectConfig: IProjectConfig = merge({}, defaults, overrides);
+  const defaultConfig = resolveDefaults(type, compilerConfig);
+  const projectConfig: IProjectConfig = defaultsDeep({}, overrides, defaultConfig);
+  const flatCompilation = overrides.rules?.flatCompilation ?? true;
 
   const resolveProjectPath = (p: string) => path.resolve(projectDir, p);
 
-  const resolveOutputOptions = (p?: IOutputOptions, defaults?: IOutputOptions): Required<IOutputOptions> => {
-    return merge({
-      dest: '.',
-      flat: false,
-      prefix: '',
-    }, defaults, p);
+  const resolveTarget = (input: Partial<IInput> | string, output: Partial<IOutput> | string, targetDefaults: Partial<IResolvedTarget>): IResolvedTarget => {
+    const inputObject = isObject(input) ? input : { dir: input };
+    const outputObject = isObject(output) ? output : { dir: output };
+
+    return defaults({
+      src: resolveProjectPath(inputObject.dir),
+      dest: path.resolve(
+        projectDir,
+        projectConfig.output.base,
+        outputObject.dir,
+        inputObject.output?.dir || '.'
+      ),
+      prefix: [outputObject.prefix, inputObject.output?.prefix].join(''),
+      filter: inputObject.filter ? castArray(inputObject.filter) : [],
+      flat: (
+        isNil(inputObject.output?.flat) && isNil(outputObject.flat)
+          ? undefined
+          : Boolean(inputObject.output?.flat || outputObject.flat)
+      )
+    }, targetDefaults);
   };
 
-  const resolveOutput = (p: string | IOutput, defaults?: IOutputOptions): IResolvedOutput => {
-    if (isNull(p)) return null;
+  const resolveTargetByType = (type: keyof IProjectConfig['output'], inputKey: keyof IProjectConfig['input'], targetDefaults: Partial<IResolvedTarget>) => {
+    if (isNull(overrides.output?.[type])) return [];
 
-    if (typeof p === 'object') {
-      return {
-        ...resolveOutputOptions(p, defaults),
-        dir: path.resolve(projectDir, projectConfig.output.base || '.', p.dir),
-      };
-    }
-
-    return {
-      ...resolveOutputOptions(null, defaults),
-      dir: path.resolve(projectDir, projectConfig.output.base || '.', p),
-    };
+    return map(
+      castArray(projectConfig.input[inputKey]),
+      input => resolveTarget(input, projectConfig.output[type], targetDefaults),
+    );
   };
 
-  const resolveInput = (input: string | IInput, output: IResolvedOutput): IResolvedInput => {
-    return isObject(input) 
-      ? {
-        dir: resolveProjectPath(input.dir),
-        filter: input.filter ? castArray(input.filter) : [],
-        output: output ? merge({}, output, input.output || {}) : null
-      }
-      : {
-        dir: resolveProjectPath(input),
-        filter: [],
-        output: output
-      };
-  };
-
-  const flatCompilation = projectConfig.rules.flatCompilation ?? true;
-
-  const output = {
-    base: resolveProjectPath(projectConfig.output.base),
-    scripts: resolveOutput(projectConfig.output.scripts, { flat: true }),
-    plugins: resolveOutput(projectConfig.output.plugins, { flat: flatCompilation }),
-    include: resolveOutput(projectConfig.output.include, { flat: true }),
-    assets: resolveOutput(projectConfig.output.assets, { flat: false })
-  };
-
-  return merge(projectConfig, {
+  return {
     type,
     path: projectDir,
-    defaults,
-    input: {
-      scripts: map(castArray(projectConfig.input.scripts), input => resolveInput(input, output?.scripts)),
-      include: map(castArray(projectConfig.input.include), input => resolveInput(input, output?.include)),
-      assets: map(castArray(projectConfig.input.assets), input => resolveInput(input, output.assets))
+    defaults: {
+      ...pick(defaultConfig, ['type', 'input', 'output', 'thirdparty', 'include', 'cli']),
+      compiler: pick(defaultConfig.compiler, ['dir', 'version', 'addons', 'executable']),
     },
-    output,
+    cli: projectConfig.cli,
+    targets: {
+      assets: resolveTargetByType('assets', 'assets', { flat: false }),
+      include: resolveTargetByType('include', 'include', { flat: true }),
+      scripts: resolveTargetByType('scripts', 'scripts', { flat: true }),
+      plugins: resolveTargetByType('plugins', 'scripts', { flat: flatCompilation }),
+    },
     include: map(projectConfig.include, resolveProjectPath),
     compiler: {
+      ...projectConfig.compiler,
       dir: resolveProjectPath(projectConfig.compiler.dir),
       config: compilerConfig
     },
@@ -140,15 +125,17 @@ function resolve(type: string, overrides: PartialDeep<IProjectConfig>, projectDi
         projectConfig.thirdparty.dependencies,
         dependency => ({
           ...dependency,
-          strip: dependency.strip || 0
+          strip: dependency.strip || 0,
+          filter: dependency.filter || [],
+          type: dependency.type || null
         })
       )
     },
     rules: {
-      flatCompilation,
-      rebuildDependents: projectConfig.rules.rebuildDependents ?? true
+      flatCompilation: projectConfig.rules.flatCompilation,
+      rebuildDependents: projectConfig.rules.rebuildDependents
     }
-  });
+  };
 }
 
 export default {
