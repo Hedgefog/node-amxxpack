@@ -35,7 +35,7 @@ command.command('add')
   .argument('<name>', 'Thirdparty name')
   .argument('<url>', 'Thirdparty URL')
   .option('--strip [strip]', 'Strip', v => parseInt(v, 10))
-  .option('--filter [filter]', 'Filter', [])
+  .option('--filter [filter]', 'Filter', v => v.split(','))
   .action(
     commandAction(async (name: string, url: string, options) => {
       const { strip, filter } = options;
