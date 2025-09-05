@@ -193,21 +193,11 @@ export default class BuilderService {
   }
 
   async compileScript(srcPath: string): Promise<boolean> {
-    const options = this.getPluginTarget(srcPath);
-    if (!options) return true;
+    const target = this.getPluginTarget(srcPath);
+    if (!target) return true;
 
     const relateiveSrcPath = path.relative(process.cwd(), srcPath);
-    const scriptDestPath = this.resolveDestPath(srcPath, options);
-
-    const { dir: scriptDir, name: scriptName } = path.parse(path.relative(options.dest, scriptDestPath));
-
-    const { fileExtensions } = this.projectConfig.compiler.config;
-
-    const pluginDestPath = path.join(
-      options.dest,
-      options.flat ? '.' : scriptDir,
-      `${scriptName}.${fileExtensions.plugin}`
-    );
+    const pluginDestPath = this.resolvePluginDestPath(srcPath, target);
 
     if (this.cache) {
       const isRelevantScript = await this.cache.isRelevantSrc(srcPath);
@@ -419,8 +409,19 @@ export default class BuilderService {
 
   private resolveDestPath(filePath: string, target: IResolvedTarget): string {
     const { dir, base } = path.parse(filePath);
-    const subDir = target.flat ? '.' : path.relative(target.src || '', dir);
+    const subDir = target.flat ? '.' : path.relative(target.src, dir);
 
     return path.join(target.dest, subDir, `${target.prefix}${base}`);
+  }
+
+  private resolvePluginDestPath(srcPath: string, target: IResolvedTarget): string {
+    const { fileExtensions } = this.projectConfig.compiler.config;
+
+    const scriptTarget = this.getFileTarget(srcPath);
+    const subDir = target.flat ? '.' : path.relative(scriptTarget.src, path.dirname(srcPath));
+
+    const { name: scriptName } = path.parse(srcPath);
+
+    return path.join(target.dest, subDir, `${target.prefix}${scriptName}.${fileExtensions.plugin}`);
   }
 }
