@@ -16,5 +16,6 @@ module.exports = {
     '@template': '<rootDir>/src/template',
     '@downloader': '<rootDir>/src/downloader'
   },
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts']
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+  globalTeardown: '<rootDir>/tests/teardown.ts'
 };

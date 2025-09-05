@@ -1,8 +1,12 @@
 import path from 'path';
+import fs from 'fs';
 
 import { TEST_TMP_DIR } from './constants';
 
+const cwd = process.cwd();
+
 beforeAll(() => {
+  fs.mkdirSync(TEST_TMP_DIR, { recursive: true });
   process.chdir(TEST_TMP_DIR);
 });
 
@@ -11,18 +15,26 @@ beforeEach(() => {
   process.chdir(TEST_TMP_DIR);
 });
 
+afterAll(() => {
+  process.chdir(cwd);
+});
+
 jest.mock('../src/common/config', () => {
+  process.env.RESOURCES_DIR = path.join(process.cwd(), 'resources');
+
   const { default: config } = jest.requireActual('../src/common/config');
   const { TEST_TMP_DIR } = jest.requireActual('./constants');
-  const testDir = path.join(TEST_TMP_DIR, '__cache__');
+  const cacheDir = path.join(TEST_TMP_DIR, '__cache__');
+
+  fs.mkdirSync(cacheDir, { recursive: true });
 
   return {
     __esModule: true,
     ...config,
     default: {
       ...config,
-      cacheFile: path.join(testDir, 'cache.json'),
-      downloadDir: path.join(testDir, 'download')
+      cacheFile: path.join(cacheDir, 'cache.json'),
+      downloadDir: path.join(cacheDir, 'download')
     }
   };
 });
