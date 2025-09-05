@@ -5,7 +5,7 @@ import fs from 'fs';
 const tempDir = path.join(os.tmpdir(), '.amxxpack');
 fs.mkdirSync(tempDir, { recursive: true });
 
-const resourcesDir = process.env.RESOURCES_DIR || path.resolve(__dirname, '..', '..', 'resources');
+const resourcesDir = process.env.RESOURCES_DIR || path.resolve(require.main.path, '..', 'resources');
 
 export default {
   title: 'AMXXPack',
