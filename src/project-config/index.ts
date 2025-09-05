@@ -57,7 +57,7 @@ const resolveDefaults = (type: string, compilerConfig: IProjectTypeConfig) => ({
 } as const);
 
 function getProjectTypeConfig(type: string): IProjectTypeConfig {
-  const configPath = path.resolve(__dirname, '..', '..', 'resources', 'project-types', `${type}.json`);
+  const configPath = path.resolve(config.projectTypesDir, `${type}.json`);
   if (!fs.existsSync(configPath)) {
     throw new CLIError(`Unsupported project type: ${type}`);
   }

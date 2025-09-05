@@ -21,6 +21,7 @@
       "@project-config": ["./src/project-config"],
       "@logger": ["./src/logger"],
       "@downloader": ["./src/downloader"],
+      "@template": ["./src/template"],
     }
   },
   "include": ["src"],

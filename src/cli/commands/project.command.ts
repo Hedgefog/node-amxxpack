@@ -4,11 +4,26 @@ import logger from '@logger';
 import { config, CLICommand, CLIError } from '@common';
 
 import commandAction from '../helpers/command-action';
-import projectFileCommand from './project-file.command';
+import projectFileCommand from './generate.command';
 import ProjectBuilderController from '../controllers/project-builder.controller';
 import ProjectCreatorController from '../controllers/project-creator.controller';
+import ProjectController from '../controllers/project.controller';
 
 const command =  new Command();
+
+command
+  .command(CLICommand.Config)
+  .option('--type, -t <type>', 'Project type', config.project.defaultType)
+  .action(
+    commandAction(async options => {
+      const { type } = options;
+      const projectDir = process.cwd();
+
+      const projectCreator = new ProjectCreatorController({ type });
+      projectCreator.projectDir = projectDir;
+      await projectCreator.createConfig();
+    })
+  );
 
 command
   .command(CLICommand.Create)
@@ -31,6 +46,27 @@ command
       await projectService.createProject();
 
       logger.success(`Your project is ready! Thanks for using ${config.title} CLI! 🤗`);
+    })
+  );
+
+command
+  .command(CLICommand.Install)
+  .alias('i')
+  .option('--config, -c <path>', 'Config file', config.project.configFile)
+  .option('--compiler', 'Install compiler')
+  .option('--thirdparty', 'Install thirdparty dependencies')
+  .action(
+    commandAction(async (_argument: string, options) => {
+      const { config: configPath, compiler, thirdparty } = options.opts();
+
+      const fullInstall = !compiler && !thirdparty;
+
+      const projectController = new ProjectController(configPath);
+
+      await projectController.install({
+        compiler: fullInstall || !!compiler,
+        thirdparty: fullInstall || !!thirdparty
+      });
     })
   );
 
@@ -89,6 +125,12 @@ command
     })
   );
 
-projectFileCommand.commands.forEach(c => command.addCommand(c));
+command.addCommand(
+  projectFileCommand
+    .name(CLICommand.Generate)
+    .alias('new')
+    .alias('n')
+    .alias('g')
+);
 
 export default command;

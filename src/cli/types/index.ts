@@ -1,7 +1,3 @@
-export interface IAddTemplateContext {
-  [key: string]: unknown;
-}
-
 export interface IProjectOptions {
   name?: string;
   author?: string;

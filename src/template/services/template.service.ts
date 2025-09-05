@@ -2,19 +2,19 @@ import fs from 'fs';
 import path from 'path';
 import { defaults, get, map, merge } from 'lodash';
 
-import { IResolvedProjectConfig } from '@common';
+import { config, IResolvedProjectConfig } from '@common';
 import logger from '@logger';
 
-import { IAddTemplateContext } from '../types';
+import { ITemplateContext } from '../types';
 
-export default class TemplateBuilderController {
-  public context: IAddTemplateContext = null;
+export default class TemplateService {
+  public context: ITemplateContext = null;
   public rawIncludes: string = null;
 
   constructor(
     public projectConfig: IResolvedProjectConfig,
-    context: IAddTemplateContext,
-    contextDefaults: Partial<IAddTemplateContext>
+    context: ITemplateContext,
+    contextDefaults: Partial<ITemplateContext>
   ) {
     this.context = defaults(
       merge({}, this.projectConfig.cli.templates.context, context),
@@ -22,13 +22,13 @@ export default class TemplateBuilderController {
     );
   }
 
-  async buildTemplate(name: string, contextOverride: IAddTemplateContext) {
+  async buildTemplate(name: string, contextOverride: ITemplateContext) {
     const { templateDir } = this.projectConfig.compiler.config.cli;
 
     const templatePath = get(
       this.projectConfig.cli.templates.files,
       name,
-      path.join(__dirname, `../../../resources/templates/${templateDir}/${name}.txt`)
+      path.join(config.templatesDir, `${templateDir}/${name}.txt`)
     );
 
     const templateString = await fs.promises.readFile(templatePath, 'utf8');
@@ -45,7 +45,7 @@ export default class TemplateBuilderController {
     return data;
   }
 
-  async createFileFromTemplate(
+  async createFile(
     filePath: string,
     template: string,
     overwrite: boolean

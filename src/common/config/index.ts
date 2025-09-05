@@ -5,11 +5,16 @@ import fs from 'fs';
 const tempDir = path.join(os.tmpdir(), '.amxxpack');
 fs.mkdirSync(tempDir, { recursive: true });
 
+const resourcesDir = process.env.RESOURCES_DIR || path.resolve(__dirname, '..', '..', 'resources');
+
 export default {
   title: 'AMXXPack',
   command: 'amxxpack',
   downloadDir: path.join(tempDir, 'downloads'),
   cacheFile: path.join(tempDir, '.cache.json'),
+  resourcesDir,
+  templatesDir: path.join(resourcesDir, 'templates'),
+  projectTypesDir: path.resolve(resourcesDir, 'project-types'),
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   version: require('../../../package.json').version,
   project: {
