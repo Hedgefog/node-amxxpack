@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { config, CLICommand } from '@common';
 
 import commandAction from '../helpers/command-action';
+import dependencyCommand from './dependency.command';
 import projectCommand from './project.command';
 import cacheCommand from './cache.command';
 import ProjectCreatorController from '../controllers/project-creator.controller';
@@ -46,6 +47,19 @@ command
   );
 
 projectCommand.commands.forEach(c => command.addCommand(c));
-command.addCommand(cacheCommand.name('cache'));
+
+command.addCommand(
+  cacheCommand
+    .name('cache')
+);
+
+command.addCommand(
+  dependencyCommand
+    .name('dependency')
+    .alias('dep')
+    .alias('d')
+    .alias('thirdparty')
+    .alias('t')
+);
 
 export default command;
