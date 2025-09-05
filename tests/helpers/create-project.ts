@@ -23,7 +23,7 @@ function createProject(dir: string) {
       author: chance.word({ length: 8 }),
       name: projectName,
       git: false,
-      nonpm: false,
+      npm: true,
       cwd: dir
     },
     async initDir(files: (IProjectFile | string)[]) {

@@ -126,7 +126,7 @@ describe('Project Creator Controller', () => {
 
   it('should not initialize npm package on project create', async () => {
     const testProject = createProject(TEST_DIR);
-    const projectCreator = new ProjectCreatorController({ type: config.project.defaultType, ...testProject.options, nonpm: true });
+    const projectCreator = new ProjectCreatorController({ type: config.project.defaultType, ...testProject.options, npm: false });
 
     await projectCreator.createProject();
     expect(projectCreator.updatePackage).not.toBeCalled();

@@ -30,17 +30,18 @@ command
   .option('--version, -v <version>', 'Project version')
   .option('--author, -a <author>', 'Project author')
   .option('--description, -d <author>', 'Project description')
-  .option('--nonpm', 'Don\'t initialize npm package', false)
+  .option('--no-npm', 'Don\'t initialize npm package', true)
+  .option('--no-install', 'Don\'t install dependencies', true)
   .option('--git', 'Initialize git', false)
   .action(
     commandAction(async (name: string, options) => {
-      const { version, author, description, nonpm, git, type } = options;
+      const { version, author, description, npm, install, git, type } = options;
 
       if (!name) {
         throw new CLIError('Project name cannot be empty!');
       }
 
-      const projectService = new ProjectCreatorController({ name, version, author, description, nonpm, git, type });
+      const projectService = new ProjectCreatorController({ name, version, author, description, npm, install, git, type });
       await projectService.createProject();
 
       logger.success(`Your project is ready! Thanks for using ${config.title} CLI! 🤗`);

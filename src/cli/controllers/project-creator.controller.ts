@@ -37,7 +37,7 @@ export default class ProjectCreatorController {
     await this.createConfig();
     await this.createDirectories();
 
-    if (!this.options.nonpm) {
+    if (this.options.npm) {
       await this.updatePackage();
     }
 
@@ -51,6 +51,10 @@ export default class ProjectCreatorController {
 
     if (this.isNpmPackageInitialized()) {
       await this.installDependencies();
+    }
+
+    if (this.options.install) {
+      await this.execCommand(`npx ${config.command} ${CLICommand.Install}`);
     }
   }
 
@@ -115,7 +119,6 @@ export default class ProjectCreatorController {
   public async installDependencies() {
     logger.info('🔄 Installing dependencies...');
     await this.execCommand(`npm install ${config.command}@${config.version} --save-dev`);
-    await this.execCommand('npm run postinstall');
   }
 
   public async initGit() {
@@ -130,7 +133,7 @@ export default class ProjectCreatorController {
     const lines = [`*.${this.projectConfig.compiler.config.fileExtensions.plugin}`];
 
     const addDir = (dir: string) => !path.isAbsolute(dir) && lines.push(
-      `${path.relative(this.projectDir, dir)}/`
+      `npx ${path.relative(this.projectDir, dir)}/`
     );
 
     addDir('node_modules');

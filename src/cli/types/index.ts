@@ -3,7 +3,8 @@ export interface IProjectOptions {
   author?: string;
   description?: string;
   version?: string;
-  nonpm?: boolean;
+  npm?: boolean;
+  install?: boolean;
   git?: boolean;
   type: string
   cwd?: string;
