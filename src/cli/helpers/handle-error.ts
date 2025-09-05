@@ -18,10 +18,13 @@ function resolveCommanderError(err: CommanderError): boolean {
   return false;
 }
 
-export default function handleError(err: unknown) {
+export default function handleError(err: unknown, interactiveMode: boolean = false) {
   if (err instanceof CommanderError) {
     if (resolveCommanderError(err)) {
-      process.exit(0);
+      if (!interactiveMode) {
+        process.exit(0);
+      }
+
       return;
     }
 
@@ -32,9 +35,11 @@ export default function handleError(err: unknown) {
     logger.error('Unknown error');
   }
 
-  if  (process.env.NODE_ENV === 'development') {
+  if (!interactiveMode && process.env.NODE_ENV === 'development') {
     throw err;
   }
 
-  process.exit(1);
+  if (!interactiveMode) {
+    process.exit(1);
+  }
 }
