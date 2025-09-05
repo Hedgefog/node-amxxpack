@@ -14,6 +14,7 @@ command.hook('preAction', () => {
 });
 
 command.command('list')
+  .alias('l')
   .action(
     commandAction(async () => {
       const dependencies = await dependencyController.getDependencies();
@@ -30,6 +31,7 @@ command.command('list')
   );
 
 command.command('add')
+  .alias('a')
   .argument('<name>', 'Thirdparty name')
   .argument('<url>', 'Thirdparty URL')
   .option('--strip [strip]', 'Strip', v => parseInt(v, 10))
@@ -45,6 +47,7 @@ command.command('add')
   );
 
 command.command('remove')
+  .alias('r')
   .argument('<name>', 'Thirdparty name')
   .action(
     commandAction(async (name: string) => {
