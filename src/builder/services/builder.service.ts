@@ -43,7 +43,7 @@ export default class BuilderService {
     }
   }
 
-  async buildScripts(options: { pattern?: string } = {}): Promise<boolean> {
+  async buildScripts(options: { pattern?: string; skipCompilation?: boolean } = {}): Promise<boolean> {
     const { fileExtensions } = this.projectConfig.compiler.config;
 
     let success = true;
@@ -54,8 +54,11 @@ export default class BuilderService {
         options.pattern ? path.join('**', options.pattern) : this.scriptsPathPattern,
         async (filePath: string) => {
           if (fileExtensions.script !== path.extname(filePath).slice(1)) return;
-          const isUpdated = await this.updateScriptAndPlugin(filePath);
-          success = success && isUpdated;
+          if (options.skipCompilation) {
+            success &&= await this.updateScript(filePath);
+          } else {
+            success &&= await this.updateScriptAndPlugin(filePath);
+          }
         }
       );
     }

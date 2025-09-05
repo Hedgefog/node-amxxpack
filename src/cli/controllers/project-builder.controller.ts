@@ -50,11 +50,13 @@ export default class ProjectBuilderController {
       if (options.assets) {
         await this.builder.buildAssets();
       }
+
       if (options.includes) {
         await this.builder.buildInclude();
       }
-      if (options.scripts) {
-        success = await this.builder.buildScripts();
+
+      if (options.plugins || options.scripts) {
+        success = await this.builder.buildScripts({ skipCompilation: !options.plugins });
       }
 
       return success;
