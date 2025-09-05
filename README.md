@@ -93,7 +93,8 @@ npm install -g amxxpack@beta
 ## 📋 Commands
 - `amxxpack create <name>` - create new project
   - `--git` - initialize git
-  - `--nonpm` - don't initialize the npm package 
+  - `--no-npm` - don't initialize the npm package 
+  - `--no-install` - don't install compiler
   - `--version` - project version
   - `--author` - project author
   - `--description` - project name
@@ -101,28 +102,58 @@ npm install -g amxxpack@beta
 - `amxxpack config` - initialize project config in the current workspace
   - `--type` - project type (e.g. `amxmodx`, `amxmodx-legacy`, `sourcemod`)
 - `amxxpack install` - install project dependencies
+  - `--compiler` - install compiler
+  - `--thirdparty` - install third-party dependencies
   - `--config` - config file
 - `amxxpack build` - command to build the project
   - `--watch` - flag to watch changes
   - `--config` - config file
   - `--ignore` - ignore build errors
   - `--no-cache` - disable caching
+  - `--assets` - build assets
+  - `--includes` - build includes
+  - `--scripts` - build scripts
+  - `--plugins` - build plugins
 - `amxxpack compile <path|glob>` - compile specific plugin in the project
   - `--config` - config file
   - `--no-cache` - disable caching
-- `amxxpack generate <script|lib|include> [name]` - create a new file in the project workspace
-  - `--config` - config file
-  - `--name` - plugin name
-  - `--version` - plugin version
-  - `--author` - plugin author
-  - `--lib` - library name
-  - `--include` - include list separated by a comma
-  - `--overwrite` - overwrite the file if it already exists
-- `amxxpack cache clean` - clean amxxpack cache
+- `amxxpack generate <type>` - create a new file in the project workspace
+  - `script` - create a new script file
+    - `--title` - plugin title
+    - `--version` - plugin version
+    - `--author` - plugin author
+    - `--include` - include list separated by a comma
+    - `--overwrite` - overwrite the file if it already exists
+    - `--config` - config file
+  - `include` - create a new include file
+    - `--include` - include list separated by a comma
+    - `--overwrite` - overwrite the file if it already exists
+    - `--config` - config file
+  - `library` - create a new library file
+    - `--name` - library name
+    - `--title` - library title
+    - `--version` - library version
+    - `--author` - library author
+    - `--include` - include list separated by a comma
+    - `--overwrite` - overwrite the file if it already exists
+    - `--config` - config file
+- `amxxpack dependency <command>` - third-party dependencies
+  - `list` - list all third-party dependencies
+  - `add <name> <url>` - add a new third-party dependency
+    - `--strip <value>` - number of directories to strip from the archive structure
+    - `--filter <value>` - glob patterns separated by a comma
+  - `remove <name>` - remove a third-party dependency
+- `amxxpack cache` - clean amxxpack cache
+  - `clean` - clean amxxpack cache
+  - `size` - show amxxpack cache size
 - `amxxpack i` - alias to `install` command
 - `amxxpack g` - alias to `generate` command
 - `amxxpack b` - alias to `build` command
 - `amxxpack c` - alias to `compile` command
+- `amxxpack d` - alias to `dependency` command
+- `amxxpack dep` - alias to `dependency` command
+- `amxxpack thirdparty` - alias to `dependency` command
+- `amxxpack t` - alias to `dependency` command
 
 ---
 
@@ -275,7 +306,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: '22'
+          node-version: '20'
       - run: npm install -g amxxpack@beta
       - run: amxxpack install
       - run: amxxpack build
