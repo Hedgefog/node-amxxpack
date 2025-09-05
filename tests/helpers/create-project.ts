@@ -18,9 +18,9 @@ function createProject(dir: string) {
     name: projectName,
     path: projectPath,
     options: {
-      author: '',
-      description: '',
-      version: '0.0.1',
+      description: chance.word({ length: 8 }),
+      version: `${chance.integer({ min: 0, max: 9 })}.${chance.integer({ min: 0, max: 9 })}.${chance.integer({ min: 0, max: 9 })}`,
+      author: chance.word({ length: 8 }),
       name: projectName,
       git: false,
       nonpm: false,

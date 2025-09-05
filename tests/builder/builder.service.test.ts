@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import rimraf from 'rimraf';
 import { map, some } from 'lodash';
 
 import { createProjectConfig } from '../../src/project-config';
@@ -10,21 +9,10 @@ import { IResolvedTarget, IResolvedProjectConfig } from '../../src/common/types'
 
 import createProject from '../helpers/create-project';
 import { TEST_TMP_DIR } from '../constants';
-import compilerMock from '../mocks/compiler';
 
 const TEST_DIR = path.join(TEST_TMP_DIR, 'builder');
 
-jest.mock('../../src/compiler', () => {
-  const originalModule = jest.requireActual('../../src/compiler');
-  const mock = jest.requireActual('../mocks/compiler').default;
-
-  return {
-    __esModule: true,
-    ...originalModule,
-    default: mock
-  };
-});
-
+const { default: compilerMock } = jest.requireMock('../../src/compiler');
 const copyFile = jest.spyOn(jest.requireActual('../../src/utils/copy-file'), 'default');
 
 function createCompileParams(projectFile: string, options: IResolvedTarget, projectConfig: IResolvedProjectConfig) {
@@ -48,19 +36,31 @@ function createCompileParams(projectFile: string, options: IResolvedTarget, proj
 }
 
 describe('Builder', () => {
+  let project: ReturnType<typeof createProject>;
+
   beforeAll(async () => {
+    await fs.promises.rm(TEST_DIR, { recursive: true, force: true });
     await fs.promises.mkdir(TEST_DIR, { recursive: true });
   });
 
-  afterAll(() => {
-    rimraf.sync(`${TEST_DIR}/*`);
+  afterAll(async () => {
+    await fs.promises.rm(TEST_DIR, { recursive: true, force: true });
   });
 
-  beforeEach(() => {
-    rimraf.sync(`${TEST_DIR}/*`);
+  beforeEach(async () => {
+    project = createProject(TEST_DIR);
+    await fs.promises.mkdir(project.path, { recursive: true });
+    process.chdir(project.path);
+
     jest.clearAllMocks();
-    compilerMock.mockClear();
+    // compilerMock.mockClear();
     copyFile.mockClear();
+  });
+
+  afterEach(async () => {
+    process.chdir(TEST_TMP_DIR);
+
+    await fs.promises.rm(project.path, { recursive: true, force: true });
   });
 
   it('should build test project scripts', async () => {
@@ -74,10 +74,7 @@ describe('Builder', () => {
       path.join(scriptsDir, 'nested/nested/test5.sma')
     ];
 
-    const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
-
-    process.chdir(project.path);
 
     const projectConfig = await createProjectConfig(
       config.project.defaultType,
@@ -110,10 +107,7 @@ describe('Builder', () => {
       ...map(projectNestedIncludeDirs, dir => path.join(dir, 'test.inc'))
     ];
 
-    const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
-
-    process.chdir(project.path);
 
     const projectConfig = await createProjectConfig(
       config.project.defaultType,
@@ -158,10 +152,7 @@ describe('Builder', () => {
       path.join(scriptsDir, 'test.sma')
     ];
 
-    const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
-
-    process.chdir(project.path);
 
     const projectConfig = await createProjectConfig(
       config.project.defaultType,
@@ -201,10 +192,7 @@ describe('Builder', () => {
         path.join(extraScriptsDir, 'nested/extra2.sma')
       ];
 
-      const project = createProject(TEST_DIR);
       await project.initDir([...scriptFiles, ...extraScriptFiles]);
-
-      process.chdir(project.path);
 
       const projectConfig = await createProjectConfig(
         config.project.defaultType,
@@ -251,10 +239,7 @@ describe('Builder', () => {
       path.join(extraScriptsDir, 'nested/extra2.sma')
     ];
 
-    const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
-
-    process.chdir(project.path);
 
     const projectConfig = await createProjectConfig(
       config.project.defaultType,{
@@ -283,10 +268,7 @@ describe('Builder', () => {
       path.join(scriptsDir, 'nested/sub/test5.sma')
     ];
 
-    const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
-
-    process.chdir(project.path);
 
     const inputConfig = { dir: scriptsDir, output: { flat: true } };
 
@@ -320,10 +302,7 @@ describe('Builder', () => {
       path.join(scriptsDir, 'nested/sub/test5.sma')
     ];
 
-    const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
-
-    process.chdir(project.path);
 
     const inputConfig = { dir: scriptsDir, flat: false };
 
@@ -354,10 +333,7 @@ describe('Builder', () => {
       path.join(scriptsDir, 'nested/test2.sma')
     ];
 
-    const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
-
-    process.chdir(project.path);
 
     const inputConfig = { dir: scriptsDir, prefix: 'test_' };
 
@@ -402,10 +378,7 @@ describe('Builder', () => {
       path.join(destPrefixedFlatDir, 'foo/bar/baz/test12.sma')
     ];
 
-    const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
-
-    process.chdir(project.path);
 
     const prefix = 'prefix_';
 
@@ -460,10 +433,7 @@ describe('Builder', () => {
       path.join(assetsDir, 'maps/test.bsp')
     ];
 
-    const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
-
-    process.chdir(project.path);
 
     const projectConfig = await createProjectConfig(
       config.project.defaultType,
@@ -498,10 +468,7 @@ describe('Builder', () => {
       path.join(extraAssetsDir, 'maps/extra.bsp')
     ];
 
-    const project = createProject(TEST_DIR);
     await project.initDir([...projectFiles, ...extraProjectFiles]);
-
-    process.chdir(project.path);
 
     const projectConfig = await createProjectConfig(
       config.project.defaultType,
@@ -535,10 +502,7 @@ describe('Builder', () => {
     const excludeExtensions = ['mdl', 'bsp'];
     const assetsFilter = `*.!(${excludeExtensions.join('|')})`;
 
-    const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
-
-    process.chdir(project.path);
 
     const projectConfig = await createProjectConfig(
       config.project.defaultType,
@@ -570,10 +534,7 @@ describe('Builder', () => {
       path.join(assetsDir, 'maps/test.bsp')
     ];
 
-    const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
-
-    process.chdir(project.path);
 
     const projectConfig = await createProjectConfig(
       config.project.defaultType,
@@ -632,10 +593,7 @@ describe('Builder', () => {
       path.join(assetsDir, 'maps/test10.bsp')
     ];
 
-    const project = createProject(TEST_DIR);
     await project.initDir(projectFiles);
-
-    process.chdir(project.path);
 
     const projectConfig = await createProjectConfig(
       config.project.defaultType,
@@ -680,10 +638,7 @@ describe('Builder', () => {
         path.join(scriptsDir, scriptName)
       ];
 
-      const project = createProject(TEST_DIR);
       await project.initDir(projectFiles);
-
-      process.chdir(project.path);
 
       const projectConfig = await createProjectConfig(
         config.project.defaultType,
@@ -716,10 +671,7 @@ describe('Builder', () => {
         path.join(scriptsDir, scriptName)
       ];
 
-      const project = createProject(TEST_DIR);
       await project.initDir(projectFiles);
-
-      process.chdir(project.path);
 
       const projectConfig = await createProjectConfig(
         config.project.defaultType,
@@ -752,10 +704,7 @@ describe('Builder', () => {
         path.join(scriptsDir, scriptName)
       ];
 
-      const project = createProject(TEST_DIR);
       await project.initDir(projectFiles);
-
-      process.chdir(project.path);
 
       const projectConfig = await createProjectConfig(
         config.project.defaultType,
@@ -788,10 +737,7 @@ describe('Builder', () => {
         path.join(scriptsDir, scriptName)
       ];
 
-      const project = createProject(TEST_DIR);
       await project.initDir(projectFiles);
-
-      process.chdir(project.path);
 
       const projectConfig = await createProjectConfig(
         config.project.defaultType,
@@ -825,10 +771,8 @@ describe('Builder', () => {
         path.join(scriptsDir, scriptName)
       ];
 
-      const project = createProject(TEST_DIR);
       await project.initDir(projectFiles);
 
-      process.chdir(project.path);
 
       const projectConfig = await createProjectConfig(
         config.project.defaultType,
@@ -861,10 +805,7 @@ describe('Builder', () => {
         path.join(scriptsDir, scriptName)
       ];
 
-      const project = createProject(TEST_DIR);
       await project.initDir(projectFiles);
-
-      process.chdir(project.path);
 
       const projectConfig = await createProjectConfig(
         config.project.defaultType,

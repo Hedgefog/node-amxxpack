@@ -17,10 +17,8 @@ command
   .action(
     commandAction(async options => {
       const { type } = options;
-      const projectDir = process.cwd();
 
       const projectCreator = new ProjectCreatorController({ type });
-      projectCreator.projectDir = projectDir;
       await projectCreator.createConfig();
     })
   );

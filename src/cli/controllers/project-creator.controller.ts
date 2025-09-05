@@ -10,14 +10,12 @@ import logger from '@logger';
 import { IProjectOptions } from '../types';
 
 export default class ProjectCreatorController {
-  public projectDir: string = null;
-  public projectConfig: IResolvedProjectConfig = null;
-  public options: IProjectOptions = null;
-  public isCurrentDir: boolean = false;
+  private projectDir: string;
+  private projectConfig: IResolvedProjectConfig;
+  private options: IProjectOptions;
+  private isCurrentDir: boolean;
 
-  constructor(
-    options: IProjectOptions = null
-  ) {
+  constructor(options: IProjectOptions) {
     const workDir = options.cwd || process.cwd();
     const projectName = options.name || path.basename(workDir);
 

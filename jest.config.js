@@ -4,6 +4,7 @@ module.exports = {
   testEnvironment: 'node',
   rootDir: '.',
   testMatch: ['**/*.test.ts'],
+  silent: true,
   moduleNameMapper: {
     '@builder': '<rootDir>/src/builder',
     '@common': '<rootDir>/src/common',
@@ -12,6 +13,8 @@ module.exports = {
     '@compiler': '<rootDir>/src/compiler',
     '@project-config': '<rootDir>/src/project-config',
     '@utils': '<rootDir>/src/utils',
-    '@template': '<rootDir>/src/template'
-  }
+    '@template': '<rootDir>/src/template',
+    '@downloader': '<rootDir>/src/downloader'
+  },
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts']
 };

@@ -1,6 +1,5 @@
 import path from 'path';
 import fs from 'fs';
-import rimraf from 'rimraf';
 
 import ProjectCreatorController from '../../src/cli/controllers/project-creator.controller';
 import config from '../../src/common/config';
@@ -9,7 +8,7 @@ import { TEST_TMP_DIR } from '../constants';
 
 const TEST_DIR = path.join(TEST_TMP_DIR, 'project-creator');
 
-describe('Project Creator', () => {
+describe('Project Creator Controller', () => {
   beforeAll(async () => {
     await fs.promises.mkdir(TEST_DIR, { recursive: true });
 
@@ -18,7 +17,7 @@ describe('Project Creator', () => {
     jest.spyOn(ProjectCreatorController.prototype, 'updatePackage');
     jest.spyOn(ProjectCreatorController.prototype, 'installDependencies').mockImplementation(
       async function installDependencies(this: ProjectCreatorController) {
-        await fs.promises.mkdir(path.join(this.projectDir, 'node_modules'), { recursive: true });
+        await fs.promises.mkdir(path.join(this['projectDir'], 'node_modules'), { recursive: true });
       }
     );
     jest.spyOn(ProjectCreatorController.prototype, 'updateGitignore');
@@ -27,30 +26,36 @@ describe('Project Creator', () => {
     jest.spyOn(ProjectCreatorController.prototype, 'isNpmPackageInitialized');
     jest.spyOn(ProjectCreatorController.prototype, 'initGit').mockImplementation(
       async function initGit(this: ProjectCreatorController) {
-        await fs.promises.mkdir(path.join(this.projectDir, '.git'), { recursive: true });
+        await fs.promises.mkdir(path.join(this['projectDir'], '.git'), { recursive: true });
       }
     );
   });
 
-  afterAll(() => {
-    rimraf.sync(`${TEST_DIR}/*`);
+  afterAll(async () => {
+    await fs.promises.rm(TEST_DIR, { recursive: true, force: true });
   });
 
-  beforeEach(() => {
-    rimraf.sync(`${TEST_DIR}/*`);
+  beforeEach(async () => {
+    await fs.promises.rm(TEST_DIR, { recursive: true, force: true });
+    fs.mkdirSync(TEST_DIR, { recursive: true });
     jest.clearAllMocks();
   });
 
   it('should initialize project', async () => {
     const testProject = createProject(TEST_DIR);
 
-    const projectCreator = new ProjectCreatorController({ type: config.project.defaultType, ...testProject.options });
+    const projectCreator = new ProjectCreatorController({
+      type: config.project.defaultType,
+      ...testProject.options
+    });
 
     await projectCreator.createProject();
     expect(projectCreator.createDirectories).toBeCalled();
     expect(projectCreator.createConfig).toBeCalled();
 
-    const { projectConfig } = projectCreator;
+    const projectConfig = projectCreator['projectConfig'];
+
+    expect(projectConfig.type).toBe(config.project.defaultType);
 
     expect(fs.existsSync(path.join(testProject.path, config.project.configFile))).toBe(true);
 

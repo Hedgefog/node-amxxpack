@@ -9,8 +9,8 @@ import { Downloader } from '@downloader';
 import { TemplateService, ITemplateContext } from '@template';
 
 export interface ICreateFileOptions {
-  include: string[];
-  overwrite: boolean;
+  include?: string[];
+  overwrite?: boolean;
 }
 
 export interface ICreateScriptOptions extends ICreateFileOptions {
@@ -24,7 +24,7 @@ export interface ICreateLibraryOptions extends ICreateScriptOptions {
 }
 
 export default class ProjectController {
-  public projectConfig: IResolvedProjectConfig;
+  private projectConfig: IResolvedProjectConfig;
 
   constructor(configPath: string) {
     this.projectConfig = loadProjectConfig(configPath);
@@ -52,30 +52,30 @@ export default class ProjectController {
       PLUGIN_NAME: options.title,
       PLUGIN_VERSION: options.version,
       PLUGIN_AUTHOR: options.author,
-      INCLUDES: uniq([...defaultIncludes, ...options.include])
+      INCLUDES: uniq([...defaultIncludes, ...(options.include || [])])
     });
 
     await templateService.createFile(
       path.join(scriptsTarget.src, dir, `${name}.${fileExtensions.script}`),
       FileTemplate.Script,
-      options.overwrite
+      options.overwrite || false
     );
   }
 
-  public async createInclude(fileName: string, options: ICreateFileOptions): Promise<void> {
+  public async createInclude(fileName: string, options: ICreateFileOptions = {}): Promise<void> {
     const { config: { fileExtensions, cli: { defaultIncludes } } } = this.projectConfig.compiler;
     const includeTarget = first(this.projectConfig.targets.include);
     const { name, dir } = path.parse(fileName);
 
     const templateService = this.createTemplateService(fileName, {
       FILE_NAME: fileName,
-      INCLUDES: uniq([...defaultIncludes, ...options.include])
+      INCLUDES: uniq([...defaultIncludes, ...(options.include || [])])
     });
 
     await templateService.createFile(
       path.join(includeTarget.src, dir, `${name}.${fileExtensions.include}`),
       FileTemplate.Include,
-      options.overwrite
+      options.overwrite || false
     );
   }
 
@@ -91,20 +91,20 @@ export default class ProjectController {
       PLUGIN_VERSION: options.version,
       PLUGIN_AUTHOR: options.author,
       LIBRARY_NAME: options.name || name.replace(/-/g, '_'),
-      INCLUDES: uniq([...defaultIncludes, ...options.include]),
+      INCLUDES: uniq([...defaultIncludes, ...(options.include || [])]),
       INCLUDE_NAME: name
     });
 
     await templateService.createFile(
       path.join(scriptsTarget.src, dir, `${name}.${fileExtensions.script}`),
       FileTemplate.LibraryScript,
-      options.overwrite
+      options.overwrite || false
     );
 
     await templateService.createFile(
       path.join(includeTarget.src, `${name}.${fileExtensions.include}`),
       FileTemplate.LibraryInclude,
-      options.overwrite
+      options.overwrite || false
     );
   }
 

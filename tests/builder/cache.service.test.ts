@@ -1,6 +1,5 @@
 import path from 'path';
 import fs from 'fs';
-import rimraf from 'rimraf';
 import NodeCache from 'node-cache';
 
 import { TEST_TMP_DIR } from '../constants';
@@ -22,14 +21,15 @@ describe('Cache', () => {
     await fs.promises.mkdir(TEST_DIR, { recursive: true });
   });
 
-  afterAll(() => {
-    rimraf.sync(`${TEST_DIR}/*`);
+  afterAll(async () => {
+    await fs.promises.rm(TEST_DIR, { recursive: true, force: true });
   });
 
   beforeEach(async () => {
-    rimraf.sync(`${TEST_DIR}/*`);
-    jest.clearAllMocks();
+    await fs.promises.rm(TEST_DIR, { recursive: true, force: true });
+    await fs.promises.mkdir(TEST_DIR, { recursive: true });
     await fs.promises.mkdir(TEST_INCLUDE_DIR, { recursive: true });
+    jest.clearAllMocks();
 
     cache = new Cache(TEST_DIR, [TEST_INCLUDE_DIR], projectConfig.compiler.config.fileExtensions);
   });
