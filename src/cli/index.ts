@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import readline  from 'readline';
+import { parseArgsStringToArgv } from 'string-argv';
 
 import logger from '@logger';
 
@@ -26,7 +27,7 @@ async function startInteractiveMode(argv: string[]) {
 
   rl.on('line', async line => {
     rl.pause();
-    await executeCommand(line.split(' '), true);
+    await executeCommand(parseArgsStringToArgv(line), true);
     rl.resume();
   });
 
