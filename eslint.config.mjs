@@ -4,7 +4,7 @@ import stylistic from '@stylistic/eslint-plugin';
 
 export default tseslint.config(
   {
-    ignores: ['**/node_modules/**', 'lib/**', 'tests/**', '*.config.js'],
+    ignores: ['**/node_modules/**', 'lib/**', '*.config.js', '**/coverage/**']
   },
   eslint.configs.recommended,
   tseslint.configs.recommended,
@@ -26,8 +26,9 @@ export default tseslint.config(
   },
   {
     rules: {
+      'object-curly-spacing': ['error', 'always'],
       '@typescript-eslint/no-unused-vars': [
-        'warn', // or 'error'
+        'warn',
         {
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
@@ -38,7 +39,9 @@ export default tseslint.config(
       '@stylistic/quotes': ['warn', 'single'],
       '@stylistic/arrow-parens': ['warn', 'as-needed'],
       '@stylistic/block-spacing': ['warn', 'always'],
-      '@stylistic/eol-last': ['warn', 'always']
+      '@stylistic/eol-last': ['warn', 'always'],
+      '@stylistic/no-trailing-spaces': 'warn',
+      '@stylistic/comma-dangle': ['warn', 'never']
     }
   }
 );
