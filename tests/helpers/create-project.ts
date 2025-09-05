@@ -1,6 +1,5 @@
 import { map } from 'lodash';
 import Chance from 'chance';
-import { mkdirp } from 'mkdirp';
 import fs from 'fs';
 import path from 'path';
 
@@ -28,16 +27,16 @@ function createProject(dir: string) {
       cwd: dir
     },
     async initDir(files: (IProjectFile | string)[]) {
-      await mkdirp(projectPath);
+      await fs.promises.mkdir(projectPath, { recursive: true });
 
       await Promise.all(
-        map(files, async (file) => {
+        map(files, async file => {
           const fileName = typeof file === 'string' ? file : file.fileName;
           const content = typeof file === 'string' ? '' : file.content;
 
           const filePath = path.join(projectPath, fileName);
           const { dir: subDir } = path.parse(filePath);
-          await mkdirp(subDir);
+          await fs.promises.mkdir(subDir, { recursive: true });
 
           await fs.promises.writeFile(filePath, content || '');
         })

@@ -3,27 +3,25 @@ import { castArray, defaults, defaultsDeep, isNil, isNull, isObject, map, pick }
 import path from 'path';
 import fs from 'fs';
 
-import { IInput, IOutput, IProjectConfig, IResolvedProjectConfig, IResolvedTarget, IDependency } from '../types';
-import CLIError from '../common/cli-error';
-import config from '../config';
+import {
+  config,
+  CLIError,
+  IInput,
+  IOutput,
+  IProjectConfig,
+  IResolvedProjectConfig,
+  IResolvedTarget,
+  IDependency
+} from '@common';
 
-import { ICompilerConfig } from './types';
+import { IProjectTypeConfig } from './types';
 
-function getCompilerConfig(type: string): ICompilerConfig {
-  const configPath = path.resolve(__dirname, '..', '..', 'resources', 'project-types', `${type}.json`);
-  if (!fs.existsSync(configPath)) {
-    throw new CLIError(`Unsupported project type: ${type}`);
-  }
-
-  return JSON.parse(fs.readFileSync(configPath, 'utf8'));
-}
-
-const resolveDefaults = (type: string, compilerConfig: ICompilerConfig) => ({
+const resolveDefaults = (type: string, compilerConfig: IProjectTypeConfig) => ({
   type,
   input: {
     scripts: './src/scripts',
     include: './src/include',
-    assets: './assets',
+    assets: './assets'
   },
   output: {
     base: './dist',
@@ -52,17 +50,26 @@ const resolveDefaults = (type: string, compilerConfig: ICompilerConfig) => ({
     templates: {
       context: {
         PLUGIN_VERSION: '1.0.0',
-        PLUGIN_AUTHOR: 'AMXXPack'
+        PLUGIN_AUTHOR: config.title
       }
     }
   }
 } as const);
 
-function resolve(type: string, overrides: PartialDeep<IProjectConfig>, projectDir?: string): IResolvedProjectConfig {
+function getProjectTypeConfig(type: string): IProjectTypeConfig {
+  const configPath = path.resolve(__dirname, '..', '..', 'resources', 'project-types', `${type}.json`);
+  if (!fs.existsSync(configPath)) {
+    throw new CLIError(`Unsupported project type: ${type}`);
+  }
+
+  return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+}
+
+export function createProjectConfig(type: string, overrides: PartialDeep<IProjectConfig>, projectDir?: string): IResolvedProjectConfig {
   projectDir = projectDir ? path.resolve(projectDir) : process.cwd();
 
-  const compilerConfig = getCompilerConfig(type);
-  const defaultConfig = resolveDefaults(type, compilerConfig);
+  const projectTypeConfig = getProjectTypeConfig(type);
+  const defaultConfig = resolveDefaults(type, projectTypeConfig);
   const projectConfig: IProjectConfig = defaultsDeep({}, overrides, defaultConfig);
   const flatCompilation = overrides.rules?.flatCompilation ?? true;
 
@@ -95,7 +102,7 @@ function resolve(type: string, overrides: PartialDeep<IProjectConfig>, projectDi
 
     return map(
       castArray(projectConfig.input[inputKey]),
-      input => resolveTarget(input, projectConfig.output[type], targetDefaults),
+      input => resolveTarget(input, projectConfig.output[type], targetDefaults)
     );
   };
 
@@ -104,20 +111,20 @@ function resolve(type: string, overrides: PartialDeep<IProjectConfig>, projectDi
     path: projectDir,
     defaults: {
       ...pick(defaultConfig, ['type', 'input', 'output', 'thirdparty', 'include', 'cli']),
-      compiler: pick(defaultConfig.compiler, ['dir', 'version', 'addons', 'executable']),
+      compiler: pick(defaultConfig.compiler, ['dir', 'version', 'addons', 'executable'])
     },
     cli: projectConfig.cli,
     targets: {
       assets: resolveTargetByType('assets', 'assets', { flat: false }),
       include: resolveTargetByType('include', 'include', { flat: true }),
       scripts: resolveTargetByType('scripts', 'scripts', { flat: true }),
-      plugins: resolveTargetByType('plugins', 'scripts', { flat: flatCompilation }),
+      plugins: resolveTargetByType('plugins', 'scripts', { flat: flatCompilation })
     },
     include: map(projectConfig.include, resolveProjectPath),
     compiler: {
       ...projectConfig.compiler,
       dir: resolveProjectPath(projectConfig.compiler.dir),
-      config: compilerConfig
+      config: projectTypeConfig
     },
     thirdparty: {
       dir: resolveProjectPath(projectConfig.thirdparty.dir),
@@ -138,20 +145,17 @@ function resolve(type: string, overrides: PartialDeep<IProjectConfig>, projectDi
   };
 }
 
-export default {
-  resolve,
-  loadFromFile(configPath: string, projectDir?: string): IResolvedProjectConfig {
-    if (!fs.existsSync(configPath)) {
-      throw new CLIError(`Cannot find config file: ${configPath}`);
-    }
-  
-    try {
-      const data = fs.readFileSync(configPath, 'utf8');
-      const projectConfig = JSON.parse(data) as PartialDeep<IProjectConfig>;
-  
-      return resolve(projectConfig.type || config.defaultProjectType, projectConfig, projectDir);
-    } catch (err) {
-      throw new CLIError(`Failed to read config file: ${configPath}! ${err instanceof Error ? err.message : err}`);
-    }
+export function loadProjectConfig(configPath: string, projectDir?: string): IResolvedProjectConfig {
+  if (!fs.existsSync(configPath)) {
+    throw new CLIError(`Cannot find config file: ${configPath}`);
   }
-};
+
+  try {
+    const data = fs.readFileSync(configPath, 'utf8');
+    const projectConfig = JSON.parse(data) as PartialDeep<IProjectConfig>;
+
+    return createProjectConfig(projectConfig.type || config.project.defaultType, projectConfig, projectDir);
+  } catch (err) {
+    throw new CLIError(`Failed to read config file: ${configPath}! ${err instanceof Error ? err.message : err}`);
+  }
+}

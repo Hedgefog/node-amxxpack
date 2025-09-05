@@ -1,6 +1,6 @@
 import path from 'path';
 
-const compilerMock = jest.fn().mockImplementation((params) => ({
+const compilerMock = jest.fn().mockImplementation(params => ({
   output: {
     messages: [{
       type: 'echo',

@@ -1,14 +1,16 @@
 import { CommanderError } from 'commander';
-import logger from '../../logger/logger';
+
+import { config } from '@common';
+import logger from '@logger';
 
 function resolveCommanderError(err: CommanderError): boolean {
   switch (err.code) {
     case 'commander.help': {
-      logger.info('Use `amxxpack --help` to see all available commands');
+      logger.info(`Use '${config.command} --help' to see all available commands`);
       return true;
     }
     case 'commander.version': {
-      logger.info(`AMXXPack v${err.message}`);
+      logger.info(`${config.title} CLI v${err.message}`);
       return true;
     }
   }

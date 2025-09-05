@@ -8,6 +8,3 @@ try {
 } catch (err) {
   handleError(err);
 }
-
-export { default as program } from './program';
-export { default as controller } from './controller';

@@ -1,7 +1,7 @@
 function stringAccumulator() {
   let value = '';
 
-  return (data?: unknown) => {
+  return (data?: string | Buffer) => {
     value += (data?.toString() || '');
     return value;
   };

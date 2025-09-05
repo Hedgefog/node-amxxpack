@@ -1,18 +1,15 @@
 import path from 'path';
+import fs from 'fs';
 import _download from 'download';
-import { mkdirp } from 'mkdirp';
-import logger from '../logger/logger';
 
-interface IDownloadResult {
+export interface IDownloadResult {
   url: string;
   path: string;
 }
 
 async function download(url: string, filePath: string): Promise<IDownloadResult> {
-  logger.debug(`Downloading file from from "${url}" to "${filePath}"`);
-
   const { dir, base: filename } = path.parse(filePath);
-  await mkdirp(dir);
+  await fs.promises.mkdir(dir, { recursive: true });
   await _download(url, dir, { filename });
 
   return { url, path: filePath };

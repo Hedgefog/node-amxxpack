@@ -1,21 +1,21 @@
 import fs from 'fs';
 import path from 'path';
 import rimraf from 'rimraf';
-import { mkdirp } from 'mkdirp';
-import { countBy, map, some } from 'lodash';
+import { map, some } from 'lodash';
 
-import ProjectConfig from '../../src/project-config';
-import AmxxBuilder from '../../src/builder/builder';
+import { createProjectConfig } from '../../src/project-config';
+import BuilderService from '../../src/builder/services/builder.service';
+import config from '../../src/common/config';
+import { IResolvedTarget, IResolvedProjectConfig } from '../../src/common/types';
+
 import createProject from '../helpers/create-project';
-import { IResolvedTarget, IResolvedProjectConfig } from '../../src/types';
 import { TEST_TMP_DIR } from '../constants';
-import config from '../../src/config';
 import compilerMock from '../mocks/compiler';
 
 const TEST_DIR = path.join(TEST_TMP_DIR, 'builder');
 
-jest.mock('../../src/builder/compiler', () => {
-  const originalModule = jest.requireActual('../../src/builder/compiler');
+jest.mock('../../src/compiler', () => {
+  const originalModule = jest.requireActual('../../src/compiler');
   const mock = jest.requireActual('../mocks/compiler').default;
 
   return {
@@ -49,7 +49,7 @@ function createCompileParams(projectFile: string, options: IResolvedTarget, proj
 
 describe('Builder', () => {
   beforeAll(async () => {
-    await mkdirp(TEST_DIR);
+    await fs.promises.mkdir(TEST_DIR, { recursive: true });
   });
 
   afterAll(() => {
@@ -71,7 +71,7 @@ describe('Builder', () => {
       path.join(scriptsDir, 'test2.sma'),
       path.join(scriptsDir, 'test3.sma'),
       path.join(scriptsDir, 'nested/test4.sma'),
-      path.join(scriptsDir, 'nested/nested/test5.sma'),
+      path.join(scriptsDir, 'nested/nested/test5.sma')
     ];
 
     const project = createProject(TEST_DIR);
@@ -79,12 +79,12 @@ describe('Builder', () => {
 
     process.chdir(project.path);
 
-    const projectConfig = await ProjectConfig.resolve(
-      config.defaultProjectType,
+    const projectConfig = await createProjectConfig(
+      config.project.defaultType,
       { input: { scripts: [scriptsDir], include: [] } }
     );
 
-    const builder = new AmxxBuilder(projectConfig);
+    const builder = new BuilderService(projectConfig);
 
     await builder.buildScripts();
 
@@ -101,13 +101,13 @@ describe('Builder', () => {
     const scriptPath = path.join(scriptsDir, 'test.sma');
     const projectNestedIncludeDirs = map(
       ['nested', 'nested/nested', 'nested/nested/nested', 'nested2'],
-      (dir) => path.join(includeDir, dir)
+      dir => path.join(includeDir, dir)
     );
 
     const projectFiles = [
       scriptPath,
       path.join(includeDir, 'test.inc'),
-      ...map(projectNestedIncludeDirs, (dir) => path.join(dir, 'test.inc'))
+      ...map(projectNestedIncludeDirs, dir => path.join(dir, 'test.inc'))
     ];
 
     const project = createProject(TEST_DIR);
@@ -115,12 +115,12 @@ describe('Builder', () => {
 
     process.chdir(project.path);
 
-    const projectConfig = await ProjectConfig.resolve(
-      config.defaultProjectType,
+    const projectConfig = await createProjectConfig(
+      config.project.defaultType,
       { input: { scripts: [scriptsDir], include: [includeDir] } }
     );
 
-    const builder = new AmxxBuilder(projectConfig);
+    const builder = new BuilderService(projectConfig);
 
     await builder.buildScripts();
 
@@ -163,12 +163,12 @@ describe('Builder', () => {
 
     process.chdir(project.path);
 
-    const projectConfig = await ProjectConfig.resolve(
-      config.defaultProjectType,
+    const projectConfig = await createProjectConfig(
+      config.project.defaultType,
       { input: { scripts: [scriptsDir], include: includeDirs } }
     );
 
-    const builder = new AmxxBuilder(projectConfig);
+    const builder = new BuilderService(projectConfig);
 
     await builder.buildScripts();
 
@@ -187,37 +187,37 @@ describe('Builder', () => {
     async function buildTestProjectAndCheck(flatCompilation: boolean) {
       const scriptsDir = './src/scripts';
       const extraScriptsDir = './src/extra-scripts';
-  
+
       const scriptFiles = [
         path.join(scriptsDir, 'test1.sma'),
         path.join(scriptsDir, 'test2.sma'),
         path.join(scriptsDir, 'test3.sma'),
         path.join(scriptsDir, 'nested/test4.sma'),
-        path.join(scriptsDir, 'nested/nested/test5.sma'),
+        path.join(scriptsDir, 'nested/nested/test5.sma')
       ];
 
       const extraScriptFiles = [
         path.join(extraScriptsDir, 'extra1.sma'),
-        path.join(extraScriptsDir, 'nested/extra2.sma'),
+        path.join(extraScriptsDir, 'nested/extra2.sma')
       ];
-  
+
       const project = createProject(TEST_DIR);
       await project.initDir([...scriptFiles, ...extraScriptFiles]);
-  
+
       process.chdir(project.path);
-  
-      const projectConfig = await ProjectConfig.resolve(
-        config.defaultProjectType,
+
+      const projectConfig = await createProjectConfig(
+        config.project.defaultType,
         {
           input: { scripts: [scriptsDir, extraScriptsDir], include: [] },
           rules: { flatCompilation }
         }
       );
-  
-      const builder = new AmxxBuilder(projectConfig);
-  
+
+      const builder = new BuilderService(projectConfig);
+
       await builder.buildScripts();
-  
+
       for (const fileName of scriptFiles) {
         const filePath = path.join(projectConfig.path, fileName);
         const compilerParams = createCompileParams(fileName, builder['getPluginTarget'](filePath), projectConfig);
@@ -248,7 +248,7 @@ describe('Builder', () => {
       path.join(scriptsDir, 'test1.sma'),
       path.join(scriptsDir, 'test2.sma'),
       path.join(extraScriptsDir, 'extra1.sma'),
-      path.join(extraScriptsDir, 'nested/extra2.sma'),
+      path.join(extraScriptsDir, 'nested/extra2.sma')
     ];
 
     const project = createProject(TEST_DIR);
@@ -256,12 +256,12 @@ describe('Builder', () => {
 
     process.chdir(project.path);
 
-    const projectConfig = await ProjectConfig.resolve(
-      config.defaultProjectType,{
+    const projectConfig = await createProjectConfig(
+      config.project.defaultType,{
       input: { scripts: [{ dir: scriptsDir }, { dir: extraScriptsDir }], include: [] }
     });
 
-    const builder = new AmxxBuilder(projectConfig);
+    const builder = new BuilderService(projectConfig);
 
     await builder.buildScripts();
 
@@ -280,7 +280,7 @@ describe('Builder', () => {
       path.join(scriptsDir, 'test2.sma'),
       path.join(scriptsDir, 'nested/test3.sma'),
       path.join(scriptsDir, 'nested/test4.sma'),
-      path.join(scriptsDir, 'nested/sub/test5.sma'),
+      path.join(scriptsDir, 'nested/sub/test5.sma')
     ];
 
     const project = createProject(TEST_DIR);
@@ -290,13 +290,13 @@ describe('Builder', () => {
 
     const inputConfig = { dir: scriptsDir, output: { flat: true } };
 
-    const projectConfig = await ProjectConfig.resolve(
-      config.defaultProjectType,{
+    const projectConfig = await createProjectConfig(
+      config.project.defaultType,{
       input: { scripts: [inputConfig], include: [] },
       rules: { flatCompilation: false }
     });
 
-    const builder = new AmxxBuilder(projectConfig);
+    const builder = new BuilderService(projectConfig);
 
     await builder.buildScripts();
 
@@ -317,7 +317,7 @@ describe('Builder', () => {
       path.join(scriptsDir, 'test2.sma'),
       path.join(scriptsDir, 'nested/test3.sma'),
       path.join(scriptsDir, 'nested/test4.sma'),
-      path.join(scriptsDir, 'nested/sub/test5.sma'),
+      path.join(scriptsDir, 'nested/sub/test5.sma')
     ];
 
     const project = createProject(TEST_DIR);
@@ -327,13 +327,13 @@ describe('Builder', () => {
 
     const inputConfig = { dir: scriptsDir, flat: false };
 
-    const projectConfig = await ProjectConfig.resolve(
-      config.defaultProjectType,{
+    const projectConfig = await createProjectConfig(
+      config.project.defaultType,{
       input: { scripts: [inputConfig], include: [] },
       rules: { flatCompilation: true }
     });
 
-    const builder = new AmxxBuilder(projectConfig);
+    const builder = new BuilderService(projectConfig);
 
     await builder.buildScripts();
 
@@ -351,7 +351,7 @@ describe('Builder', () => {
 
     const projectFiles = [
       path.join(scriptsDir, 'test1.sma'),
-      path.join(scriptsDir, 'nested/test2.sma'),
+      path.join(scriptsDir, 'nested/test2.sma')
     ];
 
     const project = createProject(TEST_DIR);
@@ -361,12 +361,12 @@ describe('Builder', () => {
 
     const inputConfig = { dir: scriptsDir, prefix: 'test_' };
 
-    const projectConfig = await ProjectConfig.resolve(
-      config.defaultProjectType,{
-      input: { scripts: [inputConfig], include: [] },
+    const projectConfig = await createProjectConfig(
+      config.project.defaultType,{
+      input: { scripts: [inputConfig], include: [] }
     });
-    
-    const builder = new AmxxBuilder(projectConfig);
+
+    const builder = new BuilderService(projectConfig);
 
     await builder.buildScripts();
 
@@ -409,8 +409,8 @@ describe('Builder', () => {
 
     const prefix = 'prefix_';
 
-    const projectConfig = await ProjectConfig.resolve(
-      config.defaultProjectType,
+    const projectConfig = await createProjectConfig(
+      config.project.defaultType,
       {
         input: {
           scripts: [
@@ -419,14 +419,14 @@ describe('Builder', () => {
             { dir: flatDir, output: { flat: true } },
             { dir: prefixedFlatDir, output: { prefix, flat: true } },
             { dir: destDir, output: { dir: './sub', flat: false } },
-            { dir: destPrefixedFlatDir, output: { prefix, dir: './sub', flat: true } },
+            { dir: destPrefixedFlatDir, output: { prefix, dir: './sub', flat: true } }
           ],
           include: []
         }
       }
     );
-    
-    const builder = new AmxxBuilder(projectConfig);
+
+    const builder = new BuilderService(projectConfig);
 
     await builder.buildScripts();
 
@@ -434,14 +434,14 @@ describe('Builder', () => {
 
     const expectedCalls = projectConfig.targets.plugins
       .reduce(
-        (acc, input) => acc + projectFiles.filter((file) => isRelative(file, input.src)).length,
+        (acc, input) => acc + projectFiles.filter(file => isRelative(file, input.src)).length,
         0
     );
-  
+
     expect(compilerMock).toHaveBeenCalledTimes(expectedCalls);
 
     for (const input of projectConfig.targets.plugins) {
-      const files = projectFiles.filter((file) => isRelative(file, input.src));
+      const files = projectFiles.filter(file => isRelative(file, input.src));
 
       for (const file of files) {
         const compilerParams = createCompileParams(file, input, projectConfig);
@@ -465,12 +465,12 @@ describe('Builder', () => {
 
     process.chdir(project.path);
 
-    const projectConfig = await ProjectConfig.resolve(
-      config.defaultProjectType,
+    const projectConfig = await createProjectConfig(
+      config.project.defaultType,
       { input: { assets: assetsDir } }
     );
 
-    const builder = new AmxxBuilder(projectConfig);
+    const builder = new BuilderService(projectConfig);
     jest.spyOn(builder, 'updateAsset');
 
     await builder.buildAssets();
@@ -503,12 +503,12 @@ describe('Builder', () => {
 
     process.chdir(project.path);
 
-    const projectConfig = await ProjectConfig.resolve(
-      config.defaultProjectType,
+    const projectConfig = await createProjectConfig(
+      config.project.defaultType,
       { input: { assets: [assetsDir, extraAssetsDir] } }
     );
 
-    const builder = new AmxxBuilder(projectConfig);
+    const builder = new BuilderService(projectConfig);
     jest.spyOn(builder, 'updateAsset');
 
     await builder.buildAssets();
@@ -518,7 +518,7 @@ describe('Builder', () => {
     }
 
     for (const fileName of extraProjectFiles) {
-      expect(builder.updateAsset).toHaveBeenCalledWith(path.resolve(fileName),);
+      expect(builder.updateAsset).toHaveBeenCalledWith(path.resolve(fileName));
     }
   });
 
@@ -540,12 +540,12 @@ describe('Builder', () => {
 
     process.chdir(project.path);
 
-    const projectConfig = await ProjectConfig.resolve(
-      config.defaultProjectType,
+    const projectConfig = await createProjectConfig(
+      config.project.defaultType,
       { input: { assets: { dir: assetsDir, filter: assetsFilter } } }
     );
 
-    const builder = new AmxxBuilder(projectConfig);
+    const builder = new BuilderService(projectConfig);
 
     await builder.buildAssets();
 
@@ -555,7 +555,7 @@ describe('Builder', () => {
         path.relative(assetsDir, fileName)
       );
 
-      const shouldExclude = some(excludeExtensions, (ext) => fileName.endsWith(`.${ext}`));
+      const shouldExclude = some(excludeExtensions, ext => fileName.endsWith(`.${ext}`));
 
       expect(fs.existsSync(destFilePath)).not.toEqual(shouldExclude);
     }
@@ -575,12 +575,12 @@ describe('Builder', () => {
 
     process.chdir(project.path);
 
-    const projectConfig = await ProjectConfig.resolve(
-      config.defaultProjectType,
+    const projectConfig = await createProjectConfig(
+      config.project.defaultType,
       { input: { assets: assetsDir } }
     );
 
-    const builder = new AmxxBuilder(projectConfig);
+    const builder = new BuilderService(projectConfig);
 
     const resolveDestPath = (projectFile: string) => {
       const filePath = path.join(projectConfig.path, projectFile);
@@ -594,7 +594,7 @@ describe('Builder', () => {
         path.join(projectConfig.path, projectFile),
         resolveDestPath(projectFile)
       );
-    
+
     await builder.buildAssets();
 
     expect(copyFile).toHaveBeenCalledTimes(projectFiles.length);
@@ -609,7 +609,7 @@ describe('Builder', () => {
 
     expect(copyFile).toHaveBeenCalledTimes(3);
 
-    expectFileCopied(projectFiles[0])
+    expectFileCopied(projectFiles[0]);
     expectFileCopied(projectFiles[1]);
     expectFileCopied(projectFiles[2]);
   });
@@ -637,12 +637,12 @@ describe('Builder', () => {
 
     process.chdir(project.path);
 
-    const projectConfig = await ProjectConfig.resolve(
-      config.defaultProjectType,
+    const projectConfig = await createProjectConfig(
+      config.project.defaultType,
       { input: { assets: assetsDir, scripts: scriptsDir } }
     );
 
-    const builder = new AmxxBuilder(projectConfig);
+    const builder = new BuilderService(projectConfig);
 
     const updateAssetSpy = jest.spyOn(builder, 'updateAsset');
     const updateScriptSpy = jest.spyOn(builder, 'updateScript');
@@ -675,25 +675,25 @@ describe('Builder', () => {
     it('when script input is flat and plugin input is not', async () => {
       const scriptsDir = './src/scripts';
       const scriptName = 'foo/bar/baz/test.sma';
-  
+
       const projectFiles = [
-        path.join(scriptsDir, scriptName),
+        path.join(scriptsDir, scriptName)
       ];
-  
+
       const project = createProject(TEST_DIR);
       await project.initDir(projectFiles);
-  
+
       process.chdir(project.path);
-  
-      const projectConfig = await ProjectConfig.resolve(
-        config.defaultProjectType,
+
+      const projectConfig = await createProjectConfig(
+        config.project.defaultType,
         {
           input: { scripts: { dir: scriptsDir, output: { flat: true } }, include: [] },
           output: { plugins: { dir: '.', flat: false } }
-        },
+        }
       );
-  
-      const builder = new AmxxBuilder(projectConfig);
+
+      const builder = new BuilderService(projectConfig);
 
       await builder.buildScripts();
 
@@ -711,31 +711,31 @@ describe('Builder', () => {
     it('when script input is not flat and plugin output is flat', async () => {
       const scriptsDir = './src/scripts';
       const scriptName = 'foo/bar/baz/test.sma';
-  
+
       const projectFiles = [
-        path.join(scriptsDir, scriptName),
+        path.join(scriptsDir, scriptName)
       ];
-  
+
       const project = createProject(TEST_DIR);
       await project.initDir(projectFiles);
-  
+
       process.chdir(project.path);
-  
-      const projectConfig = await ProjectConfig.resolve(
-        config.defaultProjectType,
+
+      const projectConfig = await createProjectConfig(
+        config.project.defaultType,
         {
           input: { scripts: { dir: scriptsDir, output: { flat: false } }, include: [] },
           output: { plugins: { dir: '.', flat: true } }
-        },
+        }
       );
-  
-      const builder = new AmxxBuilder(projectConfig);
+
+      const builder = new BuilderService(projectConfig);
 
       await builder.buildScripts();
 
       expect(compilerMock).toHaveBeenCalledTimes(1);
       const [callOptions] = compilerMock.mock.calls[0];
-      
+
       const scriptPath = path.join(projectConfig.path, scriptsDir, scriptName);
 
       expect(callOptions).toHaveProperty('dest', path.join(
@@ -747,25 +747,25 @@ describe('Builder', () => {
     it('when script input is flat and plugin input is flat', async () => {
       const scriptsDir = './src/scripts';
       const scriptName = 'foo/bar/baz/test.sma';
-  
+
       const projectFiles = [
-        path.join(scriptsDir, scriptName),
+        path.join(scriptsDir, scriptName)
       ];
-  
+
       const project = createProject(TEST_DIR);
       await project.initDir(projectFiles);
-  
+
       process.chdir(project.path);
-  
-      const projectConfig = await ProjectConfig.resolve(
-        config.defaultProjectType,
+
+      const projectConfig = await createProjectConfig(
+        config.project.defaultType,
         {
           input: { scripts: { dir: scriptsDir, output: { flat: true } }, include: [] },
           output: { plugins: { dir: '.', flat: true } }
-        },
+        }
       );
-  
-      const builder = new AmxxBuilder(projectConfig);
+
+      const builder = new BuilderService(projectConfig);
 
       await builder.buildScripts();
 
@@ -783,25 +783,25 @@ describe('Builder', () => {
     it('when script input is not flat and plugin input is not flat', async () => {
       const scriptsDir = './src/scripts';
       const scriptName = 'foo/bar/baz/test.sma';
-  
+
       const projectFiles = [
-        path.join(scriptsDir, scriptName),
+        path.join(scriptsDir, scriptName)
       ];
-  
+
       const project = createProject(TEST_DIR);
       await project.initDir(projectFiles);
-  
+
       process.chdir(project.path);
-  
-      const projectConfig = await ProjectConfig.resolve(
-        config.defaultProjectType,
+
+      const projectConfig = await createProjectConfig(
+        config.project.defaultType,
         {
           input: { scripts: { dir: scriptsDir, output: { flat: false } }, include: [] },
           output: { plugins: { dir: '.', flat: false } }
-        },
+        }
       );
-  
-      const builder = new AmxxBuilder(projectConfig);
+
+      const builder = new BuilderService(projectConfig);
 
       await builder.buildScripts();
 
@@ -820,25 +820,25 @@ describe('Builder', () => {
     it('when output for script input is not set and plugin input is flat', async () => {
       const scriptsDir = './src/scripts';
       const scriptName = 'foo/bar/baz/test.sma';
-  
+
       const projectFiles = [
-        path.join(scriptsDir, scriptName),
+        path.join(scriptsDir, scriptName)
       ];
-  
+
       const project = createProject(TEST_DIR);
       await project.initDir(projectFiles);
-  
+
       process.chdir(project.path);
-  
-      const projectConfig = await ProjectConfig.resolve(
-        config.defaultProjectType,
+
+      const projectConfig = await createProjectConfig(
+        config.project.defaultType,
         {
           input: { scripts: { dir: scriptsDir }, include: [] },
           output: { plugins: { dir: '.', flat: true } }
-        },
+        }
       );
-  
-      const builder = new AmxxBuilder(projectConfig);
+
+      const builder = new BuilderService(projectConfig);
 
       await builder.buildScripts();
 
@@ -852,29 +852,29 @@ describe('Builder', () => {
         `${path.parse(scriptName).name}.${projectConfig.compiler.config.fileExtensions.plugin}`
       ));
     });
-    
+
     it('when output for script input is not set and plugin input is not flat', async () => {
       const scriptsDir = './src/scripts';
       const scriptName = 'foo/bar/baz/test.sma';
-  
+
       const projectFiles = [
-        path.join(scriptsDir, scriptName),
+        path.join(scriptsDir, scriptName)
       ];
-  
+
       const project = createProject(TEST_DIR);
       await project.initDir(projectFiles);
-  
+
       process.chdir(project.path);
-  
-      const projectConfig = await ProjectConfig.resolve(
-        config.defaultProjectType,
+
+      const projectConfig = await createProjectConfig(
+        config.project.defaultType,
         {
           input: { scripts: { dir: scriptsDir }, include: [] },
           output: { plugins: { dir: '.', flat: false } }
-        },
+        }
       );
-  
-      const builder = new AmxxBuilder(projectConfig);
+
+      const builder = new BuilderService(projectConfig);
 
       await builder.buildScripts();
 

@@ -1,14 +1,14 @@
 import path from 'path';
 import fs from 'fs';
 import rimraf from 'rimraf';
-import { mkdirp } from 'mkdirp';
 import NodeCache from 'node-cache';
 
 import { TEST_TMP_DIR } from '../constants';
-import Cache, { CacheValueType } from '../../src/builder/cache';
-import ProjectConfig from '../../src/project-config';
-import { IResolvedProjectConfig } from '../../src/types';
-import config from '../../src/config';
+import Cache from '../../src/builder/services/cache.service';
+import { CacheValueType } from '../../src/builder/constants';
+import { createProjectConfig } from '../../src/project-config';
+import { IResolvedProjectConfig } from '../../src/common/types';
+import config from '../../src/common/config';
 
 const TEST_DIR = path.join(TEST_TMP_DIR, 'cache');
 const TEST_INCLUDE_DIR = path.join(TEST_DIR, 'include');
@@ -18,8 +18,8 @@ describe('Cache', () => {
   let cache: Cache;
 
   beforeAll(async () => {
-    projectConfig = ProjectConfig.resolve(config.defaultProjectType, {}, TEST_DIR);
-    await mkdirp(TEST_DIR);
+    projectConfig = createProjectConfig(config.project.defaultType, {}, TEST_DIR);
+    await fs.promises.mkdir(TEST_DIR, { recursive: true });
   });
 
   afterAll(() => {
@@ -29,7 +29,7 @@ describe('Cache', () => {
   beforeEach(async () => {
     rimraf.sync(`${TEST_DIR}/*`);
     jest.clearAllMocks();
-    await mkdirp(TEST_INCLUDE_DIR);
+    await fs.promises.mkdir(TEST_INCLUDE_DIR, { recursive: true });
 
     cache = new Cache(TEST_DIR, [TEST_INCLUDE_DIR], projectConfig.compiler.config.fileExtensions);
   });
@@ -192,8 +192,8 @@ describe('Cache', () => {
     const pluginPath = path.join(TEST_DIR, 'test.amxx');
 
     const nodeCache = new NodeCache();
-    nodeCache.set(cache.getFileCacheKey(srcPath, CacheValueType.Hash), 'src-hash');
-    nodeCache.set(cache.getFileCacheKey(pluginPath, CacheValueType.Hash), 'plugin-hash');
+    nodeCache.set(cache['getFileCacheKey'](srcPath, CacheValueType.Hash), 'src-hash');
+    nodeCache.set(cache['getFileCacheKey'](pluginPath, CacheValueType.Hash), 'plugin-hash');
     await fs.promises.writeFile(cacheFilePath, JSON.stringify(nodeCache.data));
 
     cache.load(cacheFilePath);
@@ -206,8 +206,8 @@ describe('Cache', () => {
     const pluginPath = path.join(TEST_DIR, 'test.amxx');
 
     const nodeCache = new NodeCache();
-    nodeCache.set(cache.getFileCacheKey(srcPath, CacheValueType.Hash), 'src-hash');
-    nodeCache.set(cache.getFileCacheKey(pluginPath, CacheValueType.Hash), 'plugin-hash');
+    nodeCache.set(cache['getFileCacheKey'](srcPath, CacheValueType.Hash), 'src-hash');
+    nodeCache.set(cache['getFileCacheKey'](pluginPath, CacheValueType.Hash), 'plugin-hash');
     await fs.promises.writeFile(cacheFilePath, JSON.stringify(nodeCache.data));
 
     cache['cache'].data = nodeCache.data;

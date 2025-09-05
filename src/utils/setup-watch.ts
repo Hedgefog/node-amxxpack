@@ -7,12 +7,12 @@ function setupWatch(dir: string | string[]) {
     interval: 300,
     awaitWriteFinish: {
       stabilityThreshold: 50,
-      pollInterval: 10,
+      pollInterval: 10
     }
   });
 
-  process.on('SIGINT', () => {
-    watcher.close();
+  process.on('SIGINT', async () => {
+    await watcher.close();
     process.exit(0);
   });
 

@@ -2,5 +2,15 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
-  rootDir: './tests'
+  rootDir: '.',
+  testMatch: ['**/*.test.ts'],
+  moduleNameMapper: {
+    '^@builder': '<rootDir>/src/builder',
+    '^@common': '<rootDir>/src/common',
+    '@logger': '<rootDir>/src/logger',
+    '^@cli': '<rootDir>/src/cli',
+    '^@compiler': '<rootDir>/src/compiler',
+    '^@project-config': '<rootDir>/src/project-config',
+    '^@utils': '<rootDir>/src/utils'
+  }
 };

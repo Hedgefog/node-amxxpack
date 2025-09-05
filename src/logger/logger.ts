@@ -31,13 +31,13 @@ class Logger {
   }
 
   out(level: LogLevel, ...args: unknown[]) {
-    if (level === 'debug' && !this.debugMode) {
+    if (level === LogLevel.Debug && !this.debugMode) {
       return;
     }
 
     const message = args
       .map(arg => (
-        (arg instanceof Object) ? JSON.stringify(arg) : arg
+        (arg instanceof Object) ? JSON.stringify(arg) : String(arg)
       ))
       .join(' ');
 

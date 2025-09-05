@@ -1,4 +1,4 @@
-export interface ICompilerConfig {
+export interface IProjectTypeConfig {
   defaultVersion: string;
   executable: string;
   scriptExtension: string;
