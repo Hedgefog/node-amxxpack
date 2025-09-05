@@ -14,6 +14,14 @@ program
 
 program.version(config.version);
 
+program.command('exit', { hidden: true })
+  .alias('quit')
+  .alias('q')
+  .description('Exit the CLI')
+  .action(() => {
+    process.exit(0);
+  });
+
 projectCommand.commands.forEach(c => program.addCommand(c));
 
 program.addCommand(
