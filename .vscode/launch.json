@@ -26,10 +26,11 @@
         "-r", "tsconfig-paths/register"
       ],
       "program": "${workspaceFolder}/src/cli/index.ts",
-      "args": "\"${input:commandline}\"",
+      "args": "${input:commandline}",
       "cwd": "${input:projectDir}",
       "outputCapture": "std",
       "sourceMaps": true,
+      "console": "integratedTerminal",
       "env": {
         "NODE_ENV": "development",
         "NODE_PATH": "${workspaceFolder}/node_modules",
