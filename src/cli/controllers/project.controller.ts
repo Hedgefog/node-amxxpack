@@ -102,7 +102,7 @@ export default class ProjectController {
     );
 
     await templateService.createFile(
-      path.join(includeTarget.src, dir, `${name}.${fileExtensions.include}`),
+      path.join(includeTarget.src, `${name}.${fileExtensions.include}`),
       FileTemplate.LibraryInclude,
       options.overwrite
     );
