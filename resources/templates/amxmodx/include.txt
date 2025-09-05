@@ -3,3 +3,4 @@
 #endif
 #define _{{FILE_NAME}}_included
 
+{{INCLUDES}}
