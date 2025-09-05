@@ -50,8 +50,8 @@ describe('Project Creator Controller', () => {
     });
 
     await projectCreator.createProject();
-    expect(projectCreator.createDirectories).toBeCalled();
-    expect(projectCreator.createConfig).toBeCalled();
+    expect(projectCreator.createDirectories).toHaveBeenCalled();
+    expect(projectCreator.createConfig).toHaveBeenCalled();
 
     const projectConfig = projectCreator['projectConfig'];
 
@@ -79,7 +79,7 @@ describe('Project Creator Controller', () => {
     const projectCreator = new ProjectCreatorController({ type: config.project.defaultType, ...testProject.options, git: true });
 
     await projectCreator.createProject();
-    expect(projectCreator.initGit).toBeCalled();
+    expect(projectCreator.initGit).toHaveBeenCalled();
     expect(fs.existsSync(path.join(testProject.path, '.git'))).toBe(true);
     expect(fs.existsSync(path.join(testProject.path, '.gitignore'))).toBe(true);
   });
@@ -89,7 +89,7 @@ describe('Project Creator Controller', () => {
     const projectCreator = new ProjectCreatorController({ type: config.project.defaultType, ...testProject.options, git: true });
 
     await projectCreator.createProject();
-    expect(projectCreator.initGit).toBeCalled();
+    expect(projectCreator.initGit).toHaveBeenCalled();
     expect(fs.existsSync(path.join(testProject.path, '.git'))).toBe(true);
     expect(fs.existsSync(path.join(testProject.path, '.gitignore'))).toBe(true);
   });
@@ -110,8 +110,8 @@ describe('Project Creator Controller', () => {
     });
 
     await projectCreator.createProject();
-    expect(projectCreator.initGit).not.toBeCalled();
-    expect(projectCreator.updateGitignore).toBeCalled();
+    expect(projectCreator.initGit).not.toHaveBeenCalled();
+    expect(projectCreator.updateGitignore).toHaveBeenCalled();
     expect(fs.existsSync(path.join(testProject.path, '.gitignore'))).toBe(true);
   });
 
@@ -120,8 +120,8 @@ describe('Project Creator Controller', () => {
     const projectCreator = new ProjectCreatorController({ type: config.project.defaultType, ...testProject.options });
 
     await projectCreator.createProject();
-    expect(projectCreator.initGit).not.toBeCalled();
-    expect(projectCreator.updateGitignore).not.toBeCalled();
+    expect(projectCreator.initGit).not.toHaveBeenCalled();
+    expect(projectCreator.updateGitignore).not.toHaveBeenCalled();
   });
 
   it('should not initialize npm package on project create', async () => {
@@ -129,8 +129,8 @@ describe('Project Creator Controller', () => {
     const projectCreator = new ProjectCreatorController({ type: config.project.defaultType, ...testProject.options, npm: false });
 
     await projectCreator.createProject();
-    expect(projectCreator.updatePackage).not.toBeCalled();
-    expect(projectCreator.installDependencies).not.toBeCalled();
+    expect(projectCreator.updatePackage).not.toHaveBeenCalled();
+    expect(projectCreator.installDependencies).not.toHaveBeenCalled();
   });
 
   it('should initialize npm package on project create', async () => {
@@ -138,7 +138,7 @@ describe('Project Creator Controller', () => {
     const projectCreator = new ProjectCreatorController({ type: config.project.defaultType, ...testProject.options });
 
     await projectCreator.createProject();
-    expect(projectCreator.updatePackage).toBeCalled();
-    expect(projectCreator.installDependencies).toBeCalled();
+    expect(projectCreator.updatePackage).toHaveBeenCalled();
+    expect(projectCreator.installDependencies).toHaveBeenCalled();
   });
 });

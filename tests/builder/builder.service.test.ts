@@ -135,7 +135,7 @@ describe('Builder', () => {
               filter: [],
               prefix: '',
               flat: true
-            })
+            } as IResolvedTarget)
           )
         ]
       }
@@ -610,19 +610,19 @@ describe('Builder', () => {
     await builder.buildInclude();
     await builder.buildScripts();
 
-    expect(updateAssetSpy).toBeCalled();
+    expect(updateAssetSpy).toHaveBeenCalled();
     for (const call of updateAssetSpy.mock.calls) {
       const [filePath] = call;
       expect(path.isAbsolute(filePath)).toEqual(true);
     }
 
-    expect(updateScriptSpy).toBeCalled();
+    expect(updateScriptSpy).toHaveBeenCalled();
     for (const call of updateScriptSpy.mock.calls) {
       const [srcDir] = call;
       expect(path.isAbsolute(srcDir)).toEqual(true);
     }
 
-    expect(updateIncludeSpy).toBeCalled();
+    expect(updateIncludeSpy).toHaveBeenCalled();
     for (const call of updateIncludeSpy.mock.calls) {
       const [filePath] = call;
       expect(path.isAbsolute(filePath)).toEqual(true);
