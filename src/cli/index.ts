@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --no-deprecation
 
 import readline  from 'readline';
 import { parseArgsStringToArgv } from 'string-argv';
@@ -63,6 +63,13 @@ async function bootstrap() {
   } else {
     await executeCommand(argv);
   }
+}
+
+if (process.env.NODE_ENV !== 'development') {
+  process.on('warning', warning => {
+    if (warning.name === 'DeprecationWarning') return;
+    console.warn(warning);
+  });
 }
 
 bootstrap();
