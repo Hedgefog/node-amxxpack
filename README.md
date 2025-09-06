@@ -1,3 +1,5 @@
+![AMXXPack](./docs/images/amxxpack-demo.gif)
+
 # 📦 AMXXPack 🇺🇦
 
 [![npm version](https://img.shields.io/npm/v/amxxpack/beta.svg)](https://www.npmjs.com/package/amxxpack/v/beta)
@@ -5,7 +7,6 @@
 [![npm downloads](https://img.shields.io/npm/dm/amxxpack)](https://www.npmjs.com/package/amxxpack/v/beta)
 [![GitHub issues](https://img.shields.io/github/issues/Hedgefog/node-amxxpack)](https://github.com/Hedgefog/node-amxxpack/issues)
 [![Dependencies Status](https://img.shields.io/librariesio/release/npm/amxxpack)](https://libraries.io/npm/amxxpack)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Hedgefog/node-amxxpack/pulls)
 
 Build system and **CLI** for **AMX Mod X** and **SourceMod** projects.
 
@@ -17,16 +18,14 @@ Build system and **CLI** for **AMX Mod X** and **SourceMod** projects.
 - [Requirements](#-requirements)
 - [Installation](#-installation)
 - [Quick start](#-quick-start)
+- [Commands](#-commands)
 - [Examples](#-examples)
   - [Basic Project Structure](#basic-project-structure)
   - [Configuration Examples](#configuration-examples)
   - [Development Workflow](#development-workflow-examples)
   - [Integration Examples](#integration-examples)
-- [Commands](#-commands)
 - [Advanced configuration](#-advanced-configuration)
 - [Using with SourceMod](#using-with-sourcemod)
-- [Troubleshooting](#-troubleshooting)
-- [Contributing](#-contributing)
 - [License](#-license)
 
 ---
@@ -42,22 +41,12 @@ Check out projects [built with **AMXXPack**](https://github.com/search?q=path%3A
 ## 📚 Features
 
 ### 🛠 Build System
-- ⚙ Flexible JSON-based configuration
-- 🗃️ Multi-plugin project support
-- 🔄 Incremental builds with caching
-- 🎯 Selective plugin compilation
-- 📁 Support for multiple input directories
-- 🔧 Customizable output structure
-- 🔥 Hot reload for rapid development
-
-### 🧩 Plugin Development
-- 🔗 Third-party dependencies management
-- 📥 Automatic compiler downloads
-- 📚 Generating new files using CLI commands
-- ⛓️ Support for both **AMX Mod X** and **SourceMod**
-
-### 🧸 Asset Management
-- 🔍 Glob pattern filtering
+| Builder                               | CLI                                    | Configuration                               |
+|---------------------------------------|----------------------------------------|---------------------------------------------|
+| 🛠️ Built-in project builder            | 🎯 Selective plugin compilation         | ⛓️ AMX Mod X **and** SourceMod support       |
+| 🔥 Hot-reload for rapid development    | 📚 File generation via CLI commands   | 📄 Flexible JSON-based config                |
+| 🗃️ Multi-plugin project support        | 📥 Automatic compiler downloader        | 🔧 Customizable output directories/structure |
+| 📁 Multiple input directories support | 🕹️ Interactive mode                     | 🔗 Third-party dependency management         |
 
 ---
 
@@ -80,13 +69,31 @@ npm install -g amxxpack@beta
 
 ---
 
-## ▶ Quick start
-- Open a terminal inside the project directory (existing or create a new one)
-- Execute `npm install amxxpack@beta -g` command to install `amxxpack` globally
-- Execute `amxxpack create .` command to create a new config
-- Execute `amxxpack install` to download project dependencies (compiler, thirdparty etc.)
-- Use `amxxpack build` command to build the project
-- Use `amxxpack watch` command to build the project and watch changes
+## 🚀 Quick start
+```bash
+# Install amxxpack globally
+npm i -g amxxpack@beta
+
+# Create project directory
+mkdir myproject
+cd myproject
+
+# Initialize new project
+amxxpack create . --type amxmodx
+
+# Creating new plugin
+amxxpack generate script myproject_core --author "Your Name" --version "1.0.0" --include hamsandwich,fakemeta
+
+# Build the project
+amxxpack build --watch
+```
+
+---
+
+### 🕹️ Interactive mode
+Run `amxxpack -i` to enter interactive mode.  
+You can execute commands directly (`build`, `install`, etc.) without prefixing them with `amxxpack`.  
+Works great with watch mode for rapid development.
 
 ---
 
@@ -233,7 +240,7 @@ myproject/
     "include": ["./src/include"],
     "assets": [
       { "dir": "./assets" },
-      { "dir": "./somemodule/models", "output": { "dest": "./models" } }
+      { "dir": "./somemodule/models", "output": { "dir": "./models" } }
     ]
   },
   "output": {
@@ -248,26 +255,7 @@ myproject/
 
 ### Development Workflow Examples
 
-1. **Starting a New Project**
-```bash
-# Create a new directory
-mkdir myproject
-cd myproject
-
-# Initialize the project
-amxxpack create . --git --type amxmodx
-
-# Install dependencies
-amxxpack install
-
-# Generate a new plugin
-amxxpack generate script mymod_core --author "Your Name" --version "1.0.0"
-
-# Start development with hot reload
-amxxpack build --watch
-```
-
-2. **Working with Multiple Plugins**
+1. **Working with Multiple Plugins**
 ```bash
 # Compile specific plugins
 amxxpack compile "mymod_core.sma"
@@ -281,7 +269,7 @@ amxxpack build
 amxxpack build --watch
 ```
 
-3. **Using with Version Control**
+2. **Using with Version Control**
 ```bash
 # Typical .gitignore entries
 node_modules/
@@ -381,7 +369,11 @@ If you need to download a single file you can provide URL to the file and it wil
 ```
 
 ### Multiple directories as an input
-You can use multiple directories as builder inputs, just specify an array of directories in the project configuration. Example:
+You can use multiple directories as builder inputs, just specify an array of directories in the project configuration.
+
+**Note:** Only first directory will be used as a directory for `generate` **CLI** command. 
+
+Example:
 
 ```json
   {
@@ -441,12 +433,12 @@ For output directories:
 
 #### Destination
 
-`dest` option is used to specify a destination directory for the compiled plugin. So plugin will be placed in the `sub` directory of the final compiled plugins directory.
+`dir` option is used to specify a destination directory for the compiled plugins. So plugin will be placed in the `sub` directory of the final compiled plugins directory.
 
 ```json
   {
     "input": {
-      "scripts": ["./src/scripts", { "dir": "./src/scripts", "output": { "dest": "sub" } }]
+      "scripts": ["./src/scripts", { "dir": "./src/scripts", "output": { "dir": "sub" } }]
     }
   }
 ```
@@ -455,7 +447,7 @@ For output directories:
 ```json
   {
     "output": {
-      "scripts": { "dir": "./dist/scripts", "dest": "sub" }
+      "scripts": { "dir": "./dist/scripts" }
     }
   }
 ```
@@ -503,7 +495,7 @@ You can also specify subdirectories for copying. With this configuration, the bu
   {
     "input": {
       "assets": [
-        { "dir": "./assets/models", "dest": "./models/myproject" }
+        { "dir": "./assets/models", "output": { "dir": "./models/myproject" } }
       ]
     }
   }
