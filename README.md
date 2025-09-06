@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="480" src="./docs/images/amxxpack-demo.gif" alt="Vite logo">
+  <img width="480" src="./docs/images/amxxpack-demo.gif">
 </p>
 
 # 📦 AMXXPack 🇺🇦
