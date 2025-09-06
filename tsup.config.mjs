@@ -5,7 +5,7 @@ export default defineConfig({
   outDir: 'lib',
   minify: true,
   platform: 'node',
-  target: 'node12',
+  target: 'node14',
   dts: false,
   sourcemap: false,
   format: ['cjs']
