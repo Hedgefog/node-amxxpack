@@ -28,7 +28,7 @@ export default class ThirdpartyDownloader {
 
     await download(dependency.url, filePath);
 
-    const outDir = path.join(this.projectConfig.path, this.projectConfig.thirdparty.dir, dependency.name);
+    const outDir = path.join(this.projectConfig.thirdparty.dir, dependency.name);
     await fs.promises.mkdir(outDir, { recursive: true });
 
     if (
