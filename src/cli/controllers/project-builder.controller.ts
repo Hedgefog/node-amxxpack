@@ -29,7 +29,6 @@ export default class ProjectBuilderController {
       includes: boolean;
     }
   ): Promise<boolean> {
-
     if (options.watch) {
       if (options.assets) {
         await this.builder.watchAssets();
