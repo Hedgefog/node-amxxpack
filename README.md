@@ -1,14 +1,17 @@
-![AMXXPack](./docs/images/amxxpack-demo.gif)
+<p align="center">
+  <img width="480" src="./docs/images/amxxpack-demo.gif" alt="Vite logo">
+</p>
 
 # 📦 AMXXPack 🇺🇦
-
 [![npm version](https://img.shields.io/npm/v/amxxpack/beta.svg)](https://www.npmjs.com/package/amxxpack/v/beta)
 [![License](https://img.shields.io/github/license/Hedgefog/node-amxxpack)](https://github.com/Hedgefog/node-amxxpack/blob/master/LICENSE)
 [![npm downloads](https://img.shields.io/npm/dm/amxxpack)](https://www.npmjs.com/package/amxxpack/v/beta)
 [![GitHub issues](https://img.shields.io/github/issues/Hedgefog/node-amxxpack)](https://github.com/Hedgefog/node-amxxpack/issues)
 [![Dependencies Status](https://img.shields.io/librariesio/release/npm/amxxpack)](https://libraries.io/npm/amxxpack)
 
-Build system and **CLI** for **AMX Mod X** and **SourceMod** projects.
+
+A modern **CLI** toolchain for [AMX Mod X](https://www.amxmodx.org/) and [SourceMod](https://www.sourcemod.net/) plugin development.  
+Build, watch, generate, and manage projects with ease.
 
 ---
 
@@ -32,21 +35,16 @@ Build system and **CLI** for **AMX Mod X** and **SourceMod** projects.
 
 ## 📄 About
 
-This system will be useful for projects with multiple plugins and assets. Using the command-line interface you can build an entire project with a single command. It also supports hot rebuild to keep your plugins and assets up to date during the work.
-
-Check out projects [built with **AMXXPack**](https://github.com/search?q=path%3A.amxxpack*.json&type=code)
+**AMXXPack** unifies building, configuration, and dependency management into a single workflow, removing the need for manual compiler setup or custom scripts. With AMXXPack, projects become easier to start, maintain, and share across different environments. Check out projects [built with **AMXXPack**](https://github.com/search?q=path%3A.amxxpack*.json&type=code)
 
 ---
 
-## 📚 Features
+## ✨ Why AMXXPack?
 
-### 🛠 Build System
-| Builder                               | CLI                                    | Configuration                               |
-|---------------------------------------|----------------------------------------|---------------------------------------------|
-| 🛠️ Built-in project builder            | 🎯 Selective plugin compilation         | ⛓️ AMX Mod X **and** SourceMod support       |
-| 🔥 Hot-reload for rapid development    | 📚 File generation via CLI commands   | 📄 Flexible JSON-based config                |
-| 🗃️ Multi-plugin project support        | 📥 Automatic compiler downloader        | 🔧 Customizable output directories/structure |
-| 📁 Multiple input directories support | 🕹️ Interactive mode                     | 🔗 Third-party dependency management         |
+- 🛠️ Build multi-plugin projects with one command  
+- 🔥 Hot reload & interactive mode for rapid development  
+- 📥 Automatic compiler & dependency management  
+- ⛓️ Unified JSON config for **AMX Mod X** and **SourceMod**
 
 ---
 
