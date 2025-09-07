@@ -7,6 +7,7 @@ import logger from '@logger';
 
 import handleError from './helpers/handle-error';
 import program from './program';
+import { RunFlags } from './constants';
 
 async function executeCommand(argv: string[], interactive: boolean = false) {
   try {
@@ -37,31 +38,44 @@ async function startInteractiveMode(argv: string[]) {
 }
 
 function parseParams(argv: string[]) {
-  const params = new Set<string>();
+  const params = [];
 
   for (const arg of argv) {
     if (arg[0] !== '-') break;
-    params.add(arg);
+    params.push(arg);
   }
 
   return params;
 }
 
+function resolveFlags(params: string[]) {
+  const flags = new Set<string>();
+
+  for (const flag of params) {
+    switch (flag) {
+      case '-i': case '--interactive': case '--input': case '--shell': {
+        flags.add(RunFlags.Interactive);
+        break;
+      }
+    }
+  }
+
+  return flags;
+}
+
 async function bootstrap() {
   const params = parseParams(process.argv.slice(2));
-  const argv = process.argv.slice(2 + params.size);
+  const flags = resolveFlags(params);
 
-  const interactive = (
-    params.has('-i') ||
-    params.has('--interactive') ||
-    params.has('--input') ||
-    params.has('--shell')
-  );
-
-  if (interactive) {
-    await startInteractiveMode(argv);
+  if (flags.size > 0) {
+    const argv = process.argv.slice(2 + params.length);
+    if (flags.has(RunFlags.Interactive)) {
+      await startInteractiveMode(argv);
+    } else {
+      await executeCommand(argv);
+    }
   } else {
-    await executeCommand(argv);
+    await executeCommand(process.argv.slice(2));
   }
 }
 
