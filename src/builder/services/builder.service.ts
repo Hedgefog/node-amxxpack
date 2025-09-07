@@ -43,7 +43,7 @@ export default class BuilderService {
     }
   }
 
-  async buildScripts(options: { pattern?: string; skipCompilation?: boolean } = {}): Promise<boolean> {
+  async buildScripts(options: { pattern?: string; skipCompilation?: boolean; ignoreErrors?: boolean } = {}): Promise<boolean> {
     const { fileExtensions } = this.projectConfig.compiler.config;
 
     let success = true;
@@ -55,9 +55,13 @@ export default class BuilderService {
         async (filePath: string) => {
           if (fileExtensions.script !== path.extname(filePath).slice(1)) return;
           if (options.skipCompilation) {
-            success &&= await this.updateScript(filePath);
+            success = (await this.updateScript(filePath)) && success;
           } else {
-            success &&= await this.updateScriptAndPlugin(filePath);
+            success = (await this.updateScriptAndPlugin(filePath)) && success;
+          }
+
+          if (!success && !options.ignoreErrors) {
+            throw new CLIError('Build failed!');
           }
         }
       );
@@ -257,7 +261,7 @@ export default class BuilderService {
       logger.success('Script compiled successfully:', normalizePath(relateiveSrcPath));
       logger.info('🧩 Plugin updated:', normalizePath(pluginDestPath));
     } else {
-      throw new CLIError(`Failed to compile ${normalizePath(relateiveSrcPath)} : "${result.error}"`);
+      logger.error(`Failed to compile ${normalizePath(relateiveSrcPath)} : "${result.error}"`);
     }
 
     return result.success;

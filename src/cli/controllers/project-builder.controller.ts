@@ -1,9 +1,7 @@
-import { CLIError } from '@common';
 import { createBuilder } from '@builder';
 import { BuilderService, IBuildOptions } from '@builder';
 import { IResolvedProjectConfig } from '@common';
 import { loadProjectConfig } from '@project-config';
-
 
 export default class ProjectBuilderController {
   private projectConfig: IResolvedProjectConfig;
@@ -29,6 +27,8 @@ export default class ProjectBuilderController {
       includes: boolean;
     }
   ): Promise<boolean> {
+    let success = true;
+
     if (options.watch) {
       if (options.assets) {
         await this.builder.watchAssets();
@@ -43,24 +43,18 @@ export default class ProjectBuilderController {
       }
     }
 
-    try {
-      let success = true;
-
-      if (options.assets) {
-        await this.builder.buildAssets();
-      }
-
-      if (options.includes) {
-        await this.builder.buildInclude();
-      }
-
-      if (options.plugins || options.scripts) {
-        success = await this.builder.buildScripts({ skipCompilation: !options.plugins });
-      }
-
-      return success;
-    } catch (err: unknown) {
-      throw new CLIError(`Build failed! Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    if (options.assets) {
+      await this.builder.buildAssets();
     }
+
+    if (options.includes) {
+      await this.builder.buildInclude();
+    }
+
+    if (options.plugins || options.scripts) {
+      success = await this.builder.buildScripts({ skipCompilation: !options.plugins, ignoreErrors: options.ignoreErrors });
+    }
+
+    return success;
   }
 }
