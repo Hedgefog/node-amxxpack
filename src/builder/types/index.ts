@@ -7,3 +7,5 @@ export interface IBuildOptions {
   noCache?: boolean;
   ignoreErrors?: boolean;
 }
+
+export type TargetCallback = (filePath: string) => Promise<unknown>;
