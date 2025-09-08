@@ -387,19 +387,26 @@ export default class BuilderService {
 
   private setFileTarget(filePath: string, target: IResolvedTarget) {
     this.fileTargetsMap.set(normalizePath(filePath), target);
+    logger.debug('File target set:', filePath);
   }
 
   private getFileTarget(filePath: string): IResolvedTarget {
     const normalizedSrcPath = normalizePath(filePath);
 
     if (!this.fileTargetsMap.has(normalizedSrcPath)) {
-      throw new CLIError(`Source file ${filePath} not found in any target!`);
+      const target = this.findFileTarget(filePath);
+      if (!target) {
+        throw new CLIError(`Source file ${filePath} not found in any target!`);
+      }
+
+      this.fileTargetsMap.set(normalizedSrcPath, target);
     }
 
     return this.fileTargetsMap.get(normalizedSrcPath);
   }
 
   private removeFileTarget(filePath: string) {
+    logger.debug('File target removed:', filePath);
     this.fileTargetsMap.delete(normalizePath(filePath));
   }
 
