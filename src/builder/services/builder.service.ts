@@ -332,7 +332,7 @@ export default class BuilderService {
 
       logger.info('🔹 File change detected. Starting incremental compilation...');
 
-      this.watchingTargets.get(target)(path.normalize(filePath)).catch((err: Error) => logger.error(err.message));
+      await this.watchingTargets.get(target)(path.normalize(filePath)).catch((err: Error) => logger.error(err.message));
 
       logger.info('🔹 Compilation complete. Watching for file changes.');
 
