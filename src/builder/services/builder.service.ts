@@ -38,7 +38,10 @@ export default class BuilderService {
 
   async buildInclude(): Promise<void> {
     for (const target of this.projectConfig.targets.include) {
-      await this.buildDir(target, this.includePathPattern, filePath => this.updateInclude(filePath));
+      await this.buildDir(target, this.includePathPattern, async filePath => {
+        await this.updateInclude(filePath);
+        await this.updateDependents(filePath);
+      });
     }
   }
 
@@ -476,5 +479,26 @@ export default class BuilderService {
     const { name: scriptName } = path.parse(srcPath);
 
     return path.join(target.dest, subDir, `${target.prefix}${scriptName}.${fileExtensions.plugin}`);
+  }
+
+  // Checks and removes all dependents files that are not exists
+  private async updateDependents(filePath: string) {
+    if (!this.cache) return;
+
+    const dependents = await Promise.all(
+      map(
+        this.cache.getDependents(filePath),
+        dependent => ({
+          path: dependent,
+          exists: fs.promises.access(dependent, fs.constants.F_OK).then(() => true).catch(() => false)
+        })
+      )
+    );
+
+    for (const dependent of dependents) {
+      if (!dependent.exists) {
+        this.cache.deleteFile(dependent.path);
+      }
+    }
   }
 }

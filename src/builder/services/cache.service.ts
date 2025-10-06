@@ -268,8 +268,7 @@ export default class CacheService {
   }
 
   private getFileCacheKey(srcPath: string, type: CacheValueType): string {
-    const normalizedSrcPath = normalizePath(srcPath);
-    const key = `${this.projectDir}:${normalizedSrcPath}?${type}`;
+    const key = `${normalizePath(srcPath)}?${type}`;
 
     if (!this.filePathHashMap.has(key)) {
       const hash = this.createHash(key);
