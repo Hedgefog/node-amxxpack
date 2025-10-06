@@ -327,6 +327,7 @@ export default class BuilderService {
 
     const updateFn = async (filePath: string) => {
       const target = this.getFileTarget(filePath);
+      if (!target) return;
 
       if (target.filter) {
         const srcFile = path.relative(target.src, filePath);
@@ -399,7 +400,7 @@ export default class BuilderService {
     if (!this.fileTargetsMap.has(normalizedSrcPath)) {
       const target = this.findFileTarget(filePath);
       if (!target) {
-        throw new CLIError(`Source file ${filePath} not found in any target!`);
+        logger.debug('File target not found:', filePath);
       }
 
       this.fileTargetsMap.set(normalizedSrcPath, target);
