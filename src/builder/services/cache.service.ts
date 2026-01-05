@@ -16,16 +16,19 @@ export default class CacheService {
   private ignoredIncludesSet: Set<string>;
   private filePathHashMap: Map<string, string>;
   private changed: boolean = false;
+  private projectHash: string;
 
   constructor(
     private projectDir: string,
     private includeDirs: string[],
     private fileExtensions: { script: string, include: string },
-    ignoredIncludes: string[] = []
+    ignoredIncludes: string[] = [],
+    private ttl: number = 60 * 60 * 24 * 30,
   ) {
     this.cache = new NodeCache();
     this.ignoredIncludesSet = new Set(ignoredIncludes);
     this.filePathHashMap = new Map();
+    this.projectHash = this.createHash(normalizePath(this.projectDir));
   }
 
   public clear() {
@@ -258,7 +261,7 @@ export default class CacheService {
   private setValue<T>(filePath: string, type: CacheValueType, value: T) {
     if (value === this.getValue<T>(filePath, type)) return;
 
-    this.cache.set(this.getFileCacheKey(filePath, type), value);
+    this.cache.set(this.getFileCacheKey(filePath, type), value, this.ttl);
     this.changed = true;
   }
 
@@ -268,7 +271,7 @@ export default class CacheService {
   }
 
   private getFileCacheKey(srcPath: string, type: CacheValueType): string {
-    const key = `${normalizePath(srcPath)}?${type}`;
+    const key = `${this.projectHash}${normalizePath(srcPath)}?${type}`;
 
     if (!this.filePathHashMap.has(key)) {
       const hash = this.createHash(key);

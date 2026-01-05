@@ -489,9 +489,9 @@ export default class BuilderService {
     const dependents = await Promise.all(
       map(
         this.cache.getDependents(filePath),
-        dependent => ({
+        async dependent => ({
           path: dependent,
-          exists: fs.promises.access(dependent, fs.constants.F_OK).then(() => true).catch(() => false)
+          exists: await fs.promises.access(dependent, fs.constants.F_OK).then(() => true).catch(() => false)
         })
       )
     );
