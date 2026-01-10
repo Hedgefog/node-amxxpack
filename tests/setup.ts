@@ -33,7 +33,7 @@ jest.mock('../src/common/config', () => {
     ...config,
     default: {
       ...config,
-      cacheFile: path.join(cacheDir, 'cache.json'),
+      cacheDir: path.join(cacheDir, 'cache'),
       downloadDir: path.join(cacheDir, 'download')
     }
   };

@@ -3,7 +3,7 @@ import fs from 'fs';
 import NodeCache from 'node-cache';
 
 import { TEST_TMP_DIR } from '../constants';
-import Cache from '../../src/builder/services/cache.service';
+import CacheService from '../../src/builder/services/cache.service';
 import { CacheValueType } from '../../src/builder/constants';
 import { createProjectConfig } from '../../src/project-config';
 import { IResolvedProjectConfig } from '../../src/common/types';
@@ -14,7 +14,7 @@ const TEST_INCLUDE_DIR = path.join(TEST_DIR, 'include');
 
 describe('Cache', () => {
   let projectConfig: IResolvedProjectConfig;
-  let cache: Cache;
+  let cache: CacheService;
 
   beforeAll(async () => {
     projectConfig = createProjectConfig(config.project.defaultType, {}, TEST_DIR);
@@ -31,7 +31,7 @@ describe('Cache', () => {
     await fs.promises.mkdir(TEST_INCLUDE_DIR, { recursive: true });
     jest.clearAllMocks();
 
-    cache = new Cache(TEST_DIR, [TEST_INCLUDE_DIR], projectConfig.compiler.config.fileExtensions);
+    cache = new CacheService([TEST_INCLUDE_DIR], projectConfig.compiler.config.fileExtensions);
   });
 
   it('should update files in cache', async () => {
@@ -192,8 +192,8 @@ describe('Cache', () => {
     const pluginPath = path.join(TEST_DIR, 'test.amxx');
 
     const nodeCache = new NodeCache();
-    nodeCache.set(cache['getFileCacheKey'](srcPath, CacheValueType.Hash), 'src-hash');
-    nodeCache.set(cache['getFileCacheKey'](pluginPath, CacheValueType.Hash), 'plugin-hash');
+    nodeCache.set(cache['getFileCacheKey'](srcPath), { [CacheValueType.Hash]: 'src-hash' });
+    nodeCache.set(cache['getFileCacheKey'](pluginPath), { [CacheValueType.Hash]: 'plugin-hash' });
     await fs.promises.writeFile(cacheFilePath, JSON.stringify(nodeCache.data));
 
     cache.load(cacheFilePath);
@@ -206,8 +206,8 @@ describe('Cache', () => {
     const pluginPath = path.join(TEST_DIR, 'test.amxx');
 
     const nodeCache = new NodeCache();
-    nodeCache.set(cache['getFileCacheKey'](srcPath, CacheValueType.Hash), 'src-hash');
-    nodeCache.set(cache['getFileCacheKey'](pluginPath, CacheValueType.Hash), 'plugin-hash');
+    nodeCache.set(cache['getFileCacheKey'](srcPath), { [CacheValueType.Hash]: 'src-hash' });
+    nodeCache.set(cache['getFileCacheKey'](pluginPath), { [CacheValueType.Hash]: 'plugin-hash' });
     await fs.promises.writeFile(cacheFilePath, JSON.stringify(nodeCache.data));
 
     cache['cache'].data = nodeCache.data;

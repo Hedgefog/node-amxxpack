@@ -10,16 +10,17 @@ import { IncludeType, parseIncludes } from '@utils';
 
 import { IDependencies } from '../types';
 import { CacheValueType } from '../constants';
+import createHash from '../../utils/create-hash';
+
+type CacheItem = Record<CacheValueType, any>;
 
 export default class CacheService {
   private cache: NodeCache;
   private ignoredIncludesSet: Set<string>;
   private filePathHashMap: Map<string, string>;
   private changed: boolean = false;
-  private projectHash: string;
 
   constructor(
-    private projectDir: string,
     private includeDirs: string[],
     private fileExtensions: { script: string, include: string },
     ignoredIncludes: string[] = [],
@@ -28,7 +29,6 @@ export default class CacheService {
     this.cache = new NodeCache();
     this.ignoredIncludesSet = new Set(ignoredIncludes);
     this.filePathHashMap = new Map();
-    this.projectHash = this.createHash(normalizePath(this.projectDir));
   }
 
   public clear() {
@@ -164,6 +164,8 @@ export default class CacheService {
   }
 
   private addDependent(filePath: string, dependentPath: string): void {
+    dependentPath = normalizePath(dependentPath);
+
     const dependents = this.hasValue(filePath, CacheValueType.Dependents) ? this.getValue<string[]>(filePath, CacheValueType.Dependents) : [];
 
     const dependentFilesSet = new Set<string>(dependents);
@@ -247,44 +249,54 @@ export default class CacheService {
 
     const buffer = await fs.promises.readFile(filePath);
 
-    return this.createHash(buffer);
+    return createHash(buffer);
   }
 
   private hasValue(filePath: string, type: CacheValueType): boolean {
-    return this.cache.has(this.getFileCacheKey(filePath, type));
+    const data = this.cache.get<CacheItem>(this.getFileCacheKey(filePath));
+    if (!data) return false;
+
+    return !!data[type];
   }
 
   private getValue<T>(filePath: string, type: CacheValueType): T | undefined {
-    return this.cache.get<T>(this.getFileCacheKey(filePath, type));
+    const data = this.cache.get<CacheItem>(this.getFileCacheKey(filePath));
+    if (!data) return null;
+
+    return data[type];
   }
 
   private setValue<T>(filePath: string, type: CacheValueType, value: T) {
     if (value === this.getValue<T>(filePath, type)) return;
 
-    this.cache.set(this.getFileCacheKey(filePath, type), value, this.ttl);
+    const cacheKey = this.getFileCacheKey(filePath);
+    
+    this.cache.set(cacheKey, {
+      ...this.cache.get<CacheItem>(cacheKey),
+      [type]: value
+    }, this.ttl);
     this.changed = true;
   }
 
   private deleteValue(filePath: string, type: CacheValueType): void {
-    this.cache.del(this.getFileCacheKey(filePath, type));
+    const cacheKey = this.getFileCacheKey(filePath);
+
+    this.cache.set(cacheKey, {
+      ...this.cache.get<CacheItem>(cacheKey),
+      [type]: undefined
+    }, this.ttl);
+    
     this.changed = true;
   }
 
-  private getFileCacheKey(srcPath: string, type: CacheValueType): string {
-    const key = `${this.projectHash}${normalizePath(srcPath)}?${type}`;
+  private getFileCacheKey(srcPath: string): string {
+    const key = normalizePath(srcPath);
 
     if (!this.filePathHashMap.has(key)) {
-      const hash = this.createHash(key);
+      const hash = createHash(key);
       this.filePathHashMap.set(key, hash);
     }
 
     return this.filePathHashMap.get(key);
-  }
-
-  private createHash(data: string | Buffer): string {
-    const hashSum = crypto.createHash('sha256');
-    hashSum.update(data);
-
-    return hashSum.digest('hex');
   }
 }

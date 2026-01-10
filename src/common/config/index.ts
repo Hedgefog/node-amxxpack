@@ -11,7 +11,7 @@ export default {
   title: 'AMXXPack',
   command: 'amxxpack',
   downloadDir: path.join(tempDir, 'downloads'),
-  cacheFile: path.join(tempDir, '.cache.json'),
+  cacheDir: path.join(tempDir, 'cache'),
   resourcesDir,
   templatesDir: path.join(resourcesDir, 'templates'),
   projectTypesDir: path.resolve(resourcesDir, 'project-types'),

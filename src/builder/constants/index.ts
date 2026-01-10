@@ -1,6 +1,6 @@
 export enum CacheValueType {
-  Hash = 'hash',
-  Dependencies = 'dependencies',
-  DependenciesHash = 'dependencies-hash',
-  Dependents = 'dependents'
+  Hash = 'h',
+  Dependencies = 'd',
+  DependenciesHash = 'dh',
+  Dependents = 'dt'
 }

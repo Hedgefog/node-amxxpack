@@ -12,6 +12,7 @@ import { copyFile, setupWatch } from '@utils';
 
 import { IBuildOptions, TargetCallback } from '../types';
 import CacheService from './cache.service';
+import createHash from '../../utils/create-hash';
 
 export default class BuilderService {
   private cache: CacheService = null;
@@ -21,9 +22,11 @@ export default class BuilderService {
   private fileTargetsMap: Map<string, IResolvedTarget>;
   private watchingTargets: Map<IResolvedTarget, TargetCallback>;
   private watcher: FSWatcher;
+  private cacheFile: string;
 
   constructor(private projectConfig: IResolvedProjectConfig, private options: IBuildOptions = {}) {
     if (!this.options.noCache) {
+      this.cacheFile = path.join(config.cacheDir, `${createHash(normalizePath(this.projectConfig.path))}.json`);
       this.initCache();
     }
 
@@ -303,7 +306,7 @@ export default class BuilderService {
         await cb(path.normalize(filePath));
 
         if (this.cache) {
-          this.cache.save(config.cacheFile);
+          this.cache.save(this.cacheFile);
         }
       }),
       Promise.resolve()
@@ -341,7 +344,7 @@ export default class BuilderService {
       logger.info('🔹 Compilation complete. Watching for file changes.');
 
       if (this.cache) {
-        this.cache.save(config.cacheFile);
+        this.cache.save(this.cacheFile);
       }
     };
 
@@ -360,16 +363,17 @@ export default class BuilderService {
   }
 
   private initCache() {
+    fs.mkdirSync(path.dirname(this.cacheFile), { recursive: true });
+
     const ignoredIncludes = this.getNativeIncludes();
 
     this.cache = new CacheService(
-      this.projectConfig.path,
       map(this.projectConfig.targets.include, 'src'),
       this.projectConfig.compiler.config.fileExtensions,
       ignoredIncludes
     );
 
-    this.cache.load(config.cacheFile);
+    this.cache.load(this.cacheFile);
   }
 
   private getNativeIncludes(): string[] {
