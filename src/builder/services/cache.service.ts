@@ -181,6 +181,8 @@ export default class CacheService {
   private removeDependent(filePath: string, dependentPath: string): void {
     if (!this.hasValue(filePath, CacheValueType.Dependents)) return;
 
+    dependentPath = normalizePath(dependentPath);
+
     const dependents = this.getValue<string[]>(filePath, CacheValueType.Dependents);
 
     const dependentFilesSet = new Set<string>(dependents);
@@ -205,15 +207,16 @@ export default class CacheService {
           const [includePath] = globule.find(path.join(projectInclude, '**', `${fileName}`), { nodir: true });
 
           if (includePath) {
-            dependencies.add(includePath);
+            dependencies.add(normalizePath(includePath));
             break;
           }
         }
       } else {
         const ext = path.extname(include.name).slice(1);
         const fileName = ext ? include.name : `${include.name}.${this.fileExtensions.include}`;
+        const filePath = path.resolve(path.dirname(srcPath), fileName);
 
-        dependencies.add(path.resolve(path.dirname(srcPath), fileName));
+        dependencies.add(normalizePath(filePath));
       }
     }
 
