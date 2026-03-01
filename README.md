@@ -3,9 +3,9 @@
 </p>
 
 # 📦 AMXXPack 🇺🇦
-[![npm version](https://img.shields.io/npm/v/amxxpack/beta.svg)](https://www.npmjs.com/package/amxxpack/v/beta)
+[![npm version](https://img.shields.io/npm/v/amxxpack.svg)](https://www.npmjs.com/package/amxxpack)
 [![License](https://img.shields.io/github/license/Hedgefog/node-amxxpack)](https://github.com/Hedgefog/node-amxxpack/blob/master/LICENSE)
-[![npm downloads](https://img.shields.io/npm/dm/amxxpack)](https://www.npmjs.com/package/amxxpack/v/beta)
+[![npm downloads](https://img.shields.io/npm/dm/amxxpack)](https://www.npmjs.com/package/amxxpack)
 [![GitHub issues](https://img.shields.io/github/issues/Hedgefog/node-amxxpack)](https://github.com/Hedgefog/node-amxxpack/issues)
 [![Dependencies Status](https://img.shields.io/librariesio/release/npm/amxxpack)](https://libraries.io/npm/amxxpack)
 
@@ -55,14 +55,14 @@ Build, watch, generate, and manage projects with ease.
 
 ## 🔧 Installation
 **AMXXPack** is available through the npm registry.
-Installation can be done using the `npm i amxxpack@beta` command:
+Installation can be done using the `npm i amxxpack` command:
 ```
-npm install amxxpack@beta
+npm install amxxpack
 ```
 
 or install it globally to use as a system command
 ```
-npm install -g amxxpack@beta
+npm install -g amxxpack
 ```
 
 ---
@@ -70,7 +70,7 @@ npm install -g amxxpack@beta
 ## 🚀 Quick start
 ```bash
 # Install amxxpack globally
-npm i -g amxxpack@beta
+npm i -g amxxpack
 
 # Create project directory
 mkdir myproject
@@ -293,7 +293,7 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '20'
-      - run: npm install -g amxxpack@beta
+      - run: npm install -g amxxpack
       - run: amxxpack install
       - run: amxxpack build
 ```
