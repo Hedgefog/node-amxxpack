@@ -39,7 +39,7 @@ export default class ThirdpartyDownloader {
 
       await decompress(filePath, outDir, {
         strip: dependency.strip,
-        filter: dependency.filter && (
+        filter: dependency.filter && dependency.filter.length && (
           file => globule.isMatch(dependency.filter, file.path, {
             dot: true,
             nocase: true,

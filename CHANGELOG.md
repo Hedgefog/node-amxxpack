@@ -1,3 +1,6 @@
+# 1.5.1
+- Fixed thirdparty extraction
+
 # 1.5.0
 - Added SourceMod project support (`--type sourcemod`)
 - Added interactive mode (`-i` flag)
