@@ -4,40 +4,40 @@ import { ILoggerOptions } from './types';
 import { LogLevel } from './constants';
 
 class Logger {
-  private debugMode: boolean = false;
+  private debugMode: boolean;
 
   constructor(options: ILoggerOptions = {}) {
-    this.debugMode = options.debug || false;
+    this.debugMode = options.debug || process.env.NODE_ENV === 'development';
   }
 
-  debug(...args: any[]) {
+  debug(...args: unknown[]) {
     this.out(LogLevel.Debug, ...args);
   }
 
-  success(...args: any[]) {
+  success(...args: unknown[]) {
     this.out(LogLevel.Success, ...args);
   }
 
-  info(...args: any[]) {
+  info(...args: unknown[]) {
     this.out(LogLevel.Info, ...args);
   }
 
-  warn(...args: any[]) {
+  warn(...args: unknown[]) {
     this.out(LogLevel.Warning, ...args);
   }
 
-  error(...args: any[]) {
+  error(...args: unknown[]) {
     this.out(LogLevel.Error, ...args);
   }
 
-  out(level: LogLevel, ...args: any[]) {
-    if (level === 'debug' && !this.debugMode) {
+  out(level: LogLevel, ...args: unknown[]) {
+    if (level === LogLevel.Debug && !this.debugMode) {
       return;
     }
 
     const message = args
-      .map((arg) => (
-        (arg instanceof Object) ? JSON.stringify(arg) : arg
+      .map(arg => (
+        (arg instanceof Object) ? JSON.stringify(arg) : String(arg)
       ))
       .join(' ');
 
@@ -45,7 +45,6 @@ class Logger {
     const coloredMessage = this.colorifyMessageByLevel(level, message);
     const time = (new Date()).toLocaleTimeString();
 
-    // eslint-disable-next-line no-console
     console.log(`[${time}]`, label, coloredMessage);
   }
 

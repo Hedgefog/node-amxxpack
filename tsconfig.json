@@ -1,16 +1,29 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es6",
     "module": "commonjs",
-    "declaration": true,
+    "moduleResolution": "node",
+    "declaration": false,
     "outDir": "./lib",
     "rootDir": "./src",
+    "baseUrl": ".",
+    "noEmit": true,
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "strictNullChecks": false
+    "strictNullChecks": false,
+    "paths": {
+      "@builder": ["./src/builder"],
+      "@common": ["./src/common"],
+      "@utils": ["./src/utils"],
+      "@compiler": ["./src/compiler"],
+      "@project-config": ["./src/project-config"],
+      "@logger": ["./src/logger"],
+      "@downloader": ["./src/downloader"],
+      "@template": ["./src/template"],
+    }
   },
   "include": ["src"],
   "exclude": ["node_modules"]

@@ -1,4 +1,3 @@
-/* eslint-disable import/prefer-default-export */
 import os from 'os';
 import path from 'path';
 

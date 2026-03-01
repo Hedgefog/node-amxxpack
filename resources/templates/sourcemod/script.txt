@@ -1,0 +1,13 @@
+#pragma semicolon 1
+
+{{INCLUDES}}
+
+public Plugin myinfo = {
+	name = "{{PLUGIN_NAME}}",
+	author = "{{PLUGIN_AUTHOR}}",
+	description = "",
+	version = "{{PLUGIN_VERSION}}",
+	url = ""
+};
+
+public void OnPluginStart() {}

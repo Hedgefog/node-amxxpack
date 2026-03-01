@@ -1,0 +1,6 @@
+#if defined _{{LIBRARY_NAME}}_included
+  #endinput
+#endif
+#define _{{LIBRARY_NAME}}_included
+
+#pragma reqlib {{LIBRARY_NAME}}

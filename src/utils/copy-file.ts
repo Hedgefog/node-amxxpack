@@ -7,14 +7,12 @@ import fs from 'fs';
  * so we have to check access to the file before copying to avoid it
  */
 async function copyFile(srcPath: string, destPath: string) {
-  // eslint-disable-next-line no-bitwise
   await fs.promises.access(srcPath, fs.constants.W_OK | fs.constants.R_OK);
 
   try {
-    // eslint-disable-next-line no-bitwise
     await fs.promises.access(destPath, fs.constants.W_OK | fs.constants.R_OK);
-  } catch (err: any) {
-    if (err.code !== 'ENOENT') {
+  } catch (err: unknown) {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
       throw err;
     }
   }

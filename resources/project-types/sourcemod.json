@@ -1,0 +1,21 @@
+{
+  "executable": "spcomp",
+  "defaultVersion": "1.12",
+  "addonName": "sourcemod",
+  "fileExtensions": {
+    "script": "sp",
+    "include": "inc",
+    "plugin": "smx"
+  },
+  "cli": {
+    "defaultIncludes": ["sourcemod"],
+    "templateDir": "sourcemod"
+  },
+  "downloader": {
+    "downloadHost": "https://sm.alliedmods.net",
+    "useMetaFile": true,
+    "baseDist": "",
+    "distSource": "smdrop",
+    "compilerDir": "addons/sourcemod/scripting"
+  }
+}
