@@ -1,3 +1,18 @@
+# 1.5.0
+- Added SourceMod project support (`--type sourcemod`)
+- Added interactive mode (`-i` flag)
+- Added automatic rebuild of dependent scripts when include files are modified
+- Added flexible script input options: `dest`, `flat`, and `prefix`
+- Added single-file third-party dependency support
+- Added `--compiler` and `--thirdparty` flags to `install` command
+- Added selective build flags: `--assets`, `--scripts`, `--plugins`, `--includes`
+- Added `dependency list`, `dependency add`, and `dependency remove` commands
+- Added `cache size` command
+- Added `--no-install` flag to `create` command
+- Renamed `--nonpm` to `--no-npm` in `create` command
+- Renamed `name` parameter to `title` in `generate script` command
+- Reduced package size
+
 # 1.4.6
 - Added nested include dirs input support
 - Fixed `cache clean` command
