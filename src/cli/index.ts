@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node --no-deprecation
+#!/usr/bin/env node
 
 import readline  from 'readline';
 import { parseArgsStringToArgv } from 'string-argv';
